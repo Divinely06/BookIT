@@ -2,6 +2,32 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 const apiBase = "";
 const sessionStorageKey = "cardinal-resource-hub-session";
+const playNotificationSound = () => {
+  const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return;
+  const context = new AudioContextClass();
+  const playTone = () => {
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(740, now);
+    oscillator.frequency.setValueAtTime(988, now + 0.1);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.35);
+    window.setTimeout(() => void context.close(), 500);
+  };
+  if (context.state === "suspended") {
+    context.resume().then(playTone).catch(() => void context.close());
+  } else {
+    playTone();
+  }
+};
 const localDateValue = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -22,6 +48,18 @@ type AppNotification = {
   is_read: boolean;
   created_at: string;
 };
+const notificationIcon = (title: string) => title.includes("Faculty")
+  ? "F"
+  : title.includes("Maintenance")
+    ? "M"
+    : title.includes("Admin")
+      ? "A"
+      : title.includes("Dean")
+        ? "D"
+        : title.includes("rejected")
+          ? "!"
+          : "✓";
+const isActionNotification = (title: string) => title.endsWith("needed");
 type NotificationToast = AppNotification;
 type StoredSession = {
   role: Role;
@@ -682,7 +720,10 @@ function Shell({
         .then((items: AppNotification[]) => {
           const knownIds = knownNotificationIds.current;
           const newest = items.find((item) => !item.is_read && (!knownIds || !knownIds.has(item.notification_id)));
-          if (newest) setToast(newest);
+          if (newest) {
+            setToast(newest);
+            playNotificationSound();
+          }
           knownNotificationIds.current = new Set(items.map((item) => item.notification_id));
           setNotifications(items);
         })
@@ -780,7 +821,11 @@ function Shell({
                       key={item.notification_id}
                       onClick={() => markNotificationRead(item.notification_id)}
                     >
-                      <b>{item.title}</b>
+                      <i className={`notification-icon ${isActionNotification(item.title) ? "action" : "status"}`}>{notificationIcon(item.title)}</i>
+                      <span className="notification-copy">
+                        <b>{item.title}</b>
+                        {isActionNotification(item.title) && <em>Action needed</em>}
+                      </span>
                       <span>{item.message}</span>
                       <small>{new Date(item.created_at).toLocaleString()}</small>
                     </button>
@@ -802,7 +847,7 @@ function Shell({
               setToast(null);
             }}
           >
-            <span className="toast-dot" />
+            <span className="toast-dot">{notificationIcon(toast.title)}</span>
             <span>
               <b>{toast.title}</b>
               <small>{toast.message}</small>

@@ -40,6 +40,17 @@ async function createBookingNotifications(bookingId: number, status: string, act
         : status === "Dean review"
           ? "dean"
           : "";
+    const notificationTitle = status === "Faculty review"
+      ? "Faculty review needed"
+      : status === "Maintenance review"
+        ? "Maintenance review needed"
+        : status === "Admin review"
+          ? "Admin review needed"
+          : status === "Dean review"
+            ? "Dean review needed"
+            : status === "Rejected"
+              ? "Booking request rejected"
+              : "Booking request approved";
     const recipients = await sql`
       select distinct recipient.user_id
       from (
@@ -61,7 +72,7 @@ async function createBookingNotifications(bookingId: number, status: string, act
     for (const recipient of recipients) {
       await sql`
         insert into notification (user_id, booking_id, title, message)
-        values (${recipient.user_id}, ${bookingId}, ${`Booking update: ${booking.event_name}`}, ${outcome})
+        values (${recipient.user_id}, ${bookingId}, ${notificationTitle}, ${outcome})
       `;
     }
   } catch (error) {
