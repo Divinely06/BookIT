@@ -479,9 +479,9 @@ button {
   position: relative;
 }
 .notification-button {
-  width: 42px;
-  height: 42px;
-  border: 1px solid #242629;
+  width: 32px;
+  height: 32px;
+  border: 0;
   border-radius: 50%;
   background: #242629;
   padding: 0;
@@ -500,18 +500,18 @@ button {
   outline-offset: 3px;
 }
 .notification-bell {
-  width: 20px;
-  height: 23px;
+  width: 16px;
+  height: 18px;
   position: relative;
   display: block;
 }
 .bell-dome {
   position: absolute;
   left: 2px;
-  top: 1px;
-  width: 16px;
-  height: 17px;
-  border-radius: 9px 9px 4px 4px;
+  top: 2px;
+  width: 12px;
+  height: 13px;
+  border-radius: 7px 7px 3px 3px;
   background: #f7f4ed;
 }
 .bell-dome::after {
@@ -519,43 +519,43 @@ button {
   position: absolute;
   left: -2px;
   bottom: -2px;
-  width: 20px;
-  height: 3px;
+  width: 16px;
+  height: 2px;
   border-radius: 3px;
   background: #f7f4ed;
 }
 .bell-dome::before {
   content: "";
   position: absolute;
-  left: 6px;
-  top: -4px;
-  width: 4px;
-  height: 5px;
+  left: 5px;
+  top: -3px;
+  width: 3px;
+  height: 4px;
   border-radius: 4px 4px 0 0;
   background: #f7f4ed;
 }
 .bell-clapper {
   position: absolute;
-  left: 7px;
+  left: 5px;
   bottom: 0;
-  width: 6px;
-  height: 5px;
-  border-radius: 0 0 6px 6px;
+  width: 5px;
+  height: 4px;
+  border-radius: 0 0 5px 5px;
   background: #f7f4ed;
 }
 .notification-count {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 9px;
+  top: -5px;
+  right: -7px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 10px;
   background: var(--red);
   color: white;
   border: 2px solid #fbfbf9;
-  font-size: 10px;
-  line-height: 16px;
+  font-size: 9px;
+  line-height: 13px;
   text-align: center;
 }
 .notification-menu {
