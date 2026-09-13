@@ -53,17 +53,17 @@ type AppNotification = {
   is_read: boolean;
   created_at: string;
 };
-const notificationIcon = (title: string) => title.includes("Faculty")
-  ? "F"
+const notificationVisual = (title: string) => title.includes("Faculty")
+  ? { icon: "✦", tone: "faculty" }
   : title.includes("Maintenance")
-    ? "M"
+    ? { icon: "⚒", tone: "maintenance" }
     : title.includes("Admin")
-      ? "A"
+      ? { icon: "⚙", tone: "admin" }
       : title.includes("Dean")
-        ? "D"
+        ? { icon: "♛", tone: "dean" }
         : title.includes("rejected")
-          ? "!"
-          : "✓";
+          ? { icon: "×", tone: "rejected" }
+          : { icon: "✓", tone: "organization" };
 const isActionNotification = (title: string) => title.endsWith("needed");
 type NotificationToast = AppNotification;
 type StoredSession = {
@@ -838,7 +838,7 @@ function Shell({
                       key={item.notification_id}
                       onClick={() => markNotificationRead(item.notification_id)}
                     >
-                      <i className={`notification-icon ${isActionNotification(item.title) ? "action" : "status"}`}>{notificationIcon(item.title)}</i>
+                      <i className={`notification-icon ${notificationVisual(item.title).tone}`}>{notificationVisual(item.title).icon}</i>
                       <span className="notification-copy">
                         <b>{item.title}</b>
                         {isActionNotification(item.title) && <em>Action needed</em>}
@@ -864,7 +864,7 @@ function Shell({
               setToast(null);
             }}
           >
-            <span className="toast-dot">{notificationIcon(toast.title)}</span>
+            <span className={`toast-dot ${notificationVisual(toast.title).tone}`}>{notificationVisual(toast.title).icon}</span>
             <span>
               <b>{toast.title}</b>
               <small>{toast.message}</small>

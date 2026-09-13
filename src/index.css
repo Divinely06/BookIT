@@ -569,11 +569,29 @@ button {
   font-weight: 800;
   color: white;
 }
-.notification-icon.action {
-  background: #b5763d;
+.notification-icon.faculty,
+.toast-dot.faculty {
+  background: #3c6eaa;
 }
-.notification-icon.status {
-  background: #39805a;
+.notification-icon.maintenance,
+.toast-dot.maintenance {
+  background: #a06a2c;
+}
+.notification-icon.admin,
+.toast-dot.admin {
+  background: #7253a6;
+}
+.notification-icon.dean,
+.toast-dot.dean {
+  background: #8b3f52;
+}
+.notification-icon.organization,
+.toast-dot.organization {
+  background: #397c63;
+}
+.notification-icon.rejected,
+.toast-dot.rejected {
+  background: #b8485a;
 }
 .notification-copy {
   display: flex;
@@ -634,7 +652,7 @@ button {
   height: 24px;
   margin-top: 4px;
   border-radius: 50%;
-  background: var(--red);
+  background: #397c63;
   flex-shrink: 0;
   display: grid;
   place-items: center;
