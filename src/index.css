@@ -1778,13 +1778,14 @@ td small {
 .brand {
   gap: 9px;
 }
-.auth-visual .mapua-logo {
-  filter: brightness(0) saturate(100%) invert(82%) sepia(99%) saturate(1000%) hue-rotate(2deg) brightness(104%) contrast(105%);
+.auth-visual .brand .mapua-logo {
+  filter: brightness(0) invert(1);
+  mix-blend-mode: normal;
 }
 .auth-page {
   height: 100svh;
   min-height: 0;
-  background: #d90000 url("/login-background.jpg") center / cover no-repeat;
+  background: #d90000 url("/login-background.png") center / cover no-repeat;
   color: #202124;
 }
 .auth-page:before,
