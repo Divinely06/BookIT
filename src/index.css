@@ -95,7 +95,7 @@ button {
   overflow: hidden;
 }
 .auth-visual:after {
-  content: "C";
+  content: none;
   position: absolute;
   right: -40px;
   bottom: -100px;
@@ -1639,7 +1639,7 @@ td small {
   z-index: 0;
 }
 .auth-visual:after {
-  content: "C";
+  content: none;
   right: 8%;
   bottom: -150px;
   font-size: 520px;
@@ -1778,9 +1778,30 @@ td small {
 .brand {
   gap: 9px;
 }
+.auth-visual .mapua-logo {
+  filter: brightness(0) saturate(100%) invert(82%) sepia(99%) saturate(1000%) hue-rotate(2deg) brightness(104%) contrast(105%);
+}
 .auth-page {
   height: 100svh;
   min-height: 0;
+  background: #d90000 url("/login-background.jpg") center / cover no-repeat;
+  color: #202124;
+}
+.auth-page:before,
+.auth-page:after {
+  display: none;
+}
+.auth-page:before {
+  width: 72%;
+  height: 130%;
+  right: -18%;
+  top: -34%;
+}
+.auth-page:after {
+  width: 45%;
+  height: 100%;
+  left: -12%;
+  bottom: -25%;
 }
 .auth-form {
   height: 100svh;
@@ -1790,6 +1811,7 @@ td small {
 .auth-inner {
   max-height: calc(100svh - 32px);
   overflow-y: auto;
+  border-top: 4px solid var(--red);
 }
 .auth-inner .field input,
 .auth-inner .password {

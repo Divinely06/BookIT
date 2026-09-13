@@ -299,8 +299,8 @@ function Logo({ dark = false, showName = true }: { dark?: boolean; showName?: bo
       />
       {showName && (
         <span>
-          <b>Cardinal</b>
-          <small>RESOURCE HUB</small>
+          <b>BookIT</b>
+          <small>MAPUA UNIVERSITY</small>
         </span>
       )}
     </div>
@@ -462,7 +462,7 @@ function Auth({
     <div className="auth-page">
       <section className="auth-visual">
         <div>
-          <Logo dark showName={false} />
+          <Logo showName={false} />
           <p className="eyebrow">MAPÚA UNIVERSITY · MAKATI CAMPUS</p>
           <h1>
             Reserve the spaces
@@ -486,7 +486,7 @@ function Auth({
           </span>
           <h2>
             {mode === "login"
-              ? "Sign in to Resource Hub"
+              ? "Sign in to BookIT"
               : mode === "forgot"
                 ? "Recover your account"
                 : "Create a new password"}
@@ -587,7 +587,7 @@ function Auth({
             </button>
           )}
           <p className="auth-footer">
-            Cardinal Resource Hub
+            School of Information Technology
           </p>
         </div>
       </section>
@@ -707,7 +707,7 @@ function Shell({
       <main className="main">
         <header className="topbar">
           <div>
-            <span className="topbar-label">CARDINAL RESOURCE HUB</span>
+            <span className="topbar-label">SCHOOL OF INFORMATION TECHNOLOGY</span>
             <span className="slash">/</span>
             <span>{info.label}</span>
           </div>
