@@ -2,10 +2,16 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 const apiBase = "";
 const sessionStorageKey = "cardinal-resource-hub-session";
-const playNotificationSound = () => {
+let notificationAudioContext: AudioContext | null = null;
+const getNotificationAudioContext = () => {
   const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextClass) return;
-  const context = new AudioContextClass();
+  if (!AudioContextClass) return null;
+  notificationAudioContext ??= new AudioContextClass();
+  return notificationAudioContext;
+};
+const playNotificationSound = () => {
+  const context = getNotificationAudioContext();
+  if (!context) return;
   const playTone = () => {
     const now = context.currentTime;
     const oscillator = context.createOscillator();
@@ -20,7 +26,6 @@ const playNotificationSound = () => {
     gain.connect(context.destination);
     oscillator.start(now);
     oscillator.stop(now + 0.35);
-    window.setTimeout(() => void context.close(), 500);
   };
   if (context.state === "suspended") {
     context.resume().then(playTone).catch(() => void context.close());
@@ -733,6 +738,18 @@ function Shell({
     const interval = window.setInterval(refreshNotifications, 5000);
     return () => window.clearInterval(interval);
   }, [user?.userId]);
+  useEffect(() => {
+    const unlockAudio = () => {
+      const context = getNotificationAudioContext();
+      if (context?.state === "suspended") void context.resume();
+    };
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, []);
   useEffect(() => {
     if (!toast) return;
     const timeout = window.setTimeout(() => setToast(null), 7000);
