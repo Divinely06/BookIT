@@ -475,32 +475,86 @@ button {
   gap: 22px;
   align-items: center;
 }
-.notification {
-  color: var(--red);
-  font-size: 20px;
-}
 .notification-wrap {
   position: relative;
 }
 .notification-button {
-  border: 0;
-  background: transparent;
-  padding: 4px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #242629;
+  border-radius: 50%;
+  background: #242629;
+  padding: 0;
   display: grid;
   place-items: center;
   position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.notification-button:hover {
+  background: #111315;
+  transform: translateY(-1px);
+}
+.notification-button:focus-visible {
+  outline: 3px solid #d7a24c;
+  outline-offset: 3px;
+}
+.notification-bell {
+  width: 20px;
+  height: 23px;
+  position: relative;
+  display: block;
+}
+.bell-dome {
+  position: absolute;
+  left: 2px;
+  top: 1px;
+  width: 16px;
+  height: 17px;
+  border-radius: 9px 9px 4px 4px;
+  background: #f7f4ed;
+}
+.bell-dome::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  width: 20px;
+  height: 3px;
+  border-radius: 3px;
+  background: #f7f4ed;
+}
+.bell-dome::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: -4px;
+  width: 4px;
+  height: 5px;
+  border-radius: 4px 4px 0 0;
+  background: #f7f4ed;
+}
+.bell-clapper {
+  position: absolute;
+  left: 7px;
+  bottom: 0;
+  width: 6px;
+  height: 5px;
+  border-radius: 0 0 6px 6px;
+  background: #f7f4ed;
 }
 .notification-count {
   position: absolute;
-  top: -2px;
-  right: -5px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
   border-radius: 9px;
   background: var(--red);
   color: white;
-  font-size: 9px;
+  border: 2px solid #fbfbf9;
+  font-size: 10px;
   line-height: 16px;
   text-align: center;
 }

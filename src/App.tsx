@@ -819,9 +819,13 @@ function Shell({
               <button
                 className="notification-button"
                 aria-label="Open notifications"
+                aria-expanded={notificationsOpen}
                 onClick={() => setNotificationsOpen((open) => !open)}
               >
-                <span className="notification">◌</span>
+                <span className="notification-bell" aria-hidden="true">
+                  <span className="bell-dome" />
+                  <span className="bell-clapper" />
+                </span>
                 {unreadCount > 0 && <b className="notification-count">{unreadCount > 9 ? "9+" : unreadCount}</b>}
               </button>
               {notificationsOpen && (
