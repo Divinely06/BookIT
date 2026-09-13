@@ -4,6 +4,72 @@ import { sql } from "./db.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
 
+async function createBookingNotifications(bookingId: number, status: string, actorRole: string, remarks?: string) {
+  try {
+    const [booking] = await sql`
+      select b.event_name, b.org_id, b.requested_by_user_id, o.faculty_adviser_id, o.org_name
+      from booking b
+      join student_organization o on o.org_id = b.org_id
+      where b.booking_id = ${bookingId}
+    `;
+    if (!booking) return;
+
+    const roleLabels: Record<string, string> = {
+      organization: "the organization",
+      faculty: "the faculty adviser",
+      maintenance: "maintenance",
+      admin: "the administrator",
+      dean: "the Dean",
+    };
+    const actor = roleLabels[actorRole] ?? actorRole;
+    const nextStage = status === "Maintenance review"
+      ? "maintenance"
+      : status === "Admin review"
+        ? "administrator"
+        : status === "Dean review"
+          ? "the Dean"
+          : "the organization";
+    const outcome = status === "Rejected"
+      ? `The request was rejected by ${actor}. Reason: ${remarks || "No reason provided"}`
+      : status === "Approved"
+        ? "The request was approved by the Dean."
+        : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
+    const nextRole = status === "Maintenance review"
+      ? "maintenance"
+      : status === "Admin review"
+        ? "admin"
+        : status === "Dean review"
+          ? "dean"
+          : "";
+    const recipients = await sql`
+      select distinct recipient.user_id
+      from (
+        select b.requested_by_user_id as user_id
+        from booking b where b.booking_id = ${bookingId}
+        union
+        select membership.user_id
+        from user_organization membership
+        where membership.org_id = ${booking.org_id} and membership.status = 'Active'
+        union
+        select ${booking.faculty_adviser_id} as user_id
+        where ${status} = 'Faculty review'
+        union
+        select u.user_id
+        from app_user u where u.role = ${nextRole}
+      ) recipient
+      where recipient.user_id is not null
+    `;
+    for (const recipient of recipients) {
+      await sql`
+        insert into notification (user_id, booking_id, title, message)
+        values (${recipient.user_id}, ${bookingId}, ${`Booking update: ${booking.event_name}`}, ${outcome})
+      `;
+    }
+  } catch (error) {
+    console.error("In-app booking notification failed", error);
+  }
+}
+
 app.use(express.json({ limit: "15mb" }));
 app.use((_request, response, next) => {
   response.header("Access-Control-Allow-Origin", "http://localhost:5173");
@@ -115,6 +181,45 @@ app.get("/api/bookings", async (request, response) => {
     response.json(bookings);
   } catch {
     response.status(500).json({ error: "Unable to load bookings" });
+  }
+});
+
+app.get("/api/notifications", async (request, response) => {
+  const userId = Number(request.query.userId);
+  if (!Number.isInteger(userId) || userId < 1) {
+    response.status(400).json({ error: "User identity is required" });
+    return;
+  }
+  try {
+    const notifications = await sql`
+      select notification_id, booking_id, title, message, is_read, created_at
+      from notification
+      where user_id = ${userId}
+      order by created_at desc
+      limit 30
+    `;
+    response.json(notifications);
+  } catch {
+    response.status(500).json({ error: "Unable to load notifications" });
+  }
+});
+
+app.patch(["/api/notifications", "/api/notifications/:id/read"], async (request, response) => {
+  const notificationId = Number(request.query.id ?? request.params.id);
+  const userId = Number(request.body?.userId);
+  if (!Number.isInteger(notificationId) || !Number.isInteger(userId) || userId < 1) {
+    response.status(400).json({ error: "Invalid notification update" });
+    return;
+  }
+  try {
+    await sql`
+      update notification
+      set is_read = true
+      where notification_id = ${notificationId} and user_id = ${userId}
+    `;
+    response.json({ updated: true });
+  } catch {
+    response.status(500).json({ error: "Unable to update notification" });
   }
 });
 
@@ -512,6 +617,7 @@ app.post("/api/bookings", async (request, response) => {
       `;
     }
 
+    await createBookingNotifications(Number(booking.booking_id), "Faculty review", "organization");
     response.status(201).json(booking);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Booking failed";
@@ -527,14 +633,6 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
     response.status(400).json({ error: "Invalid status update" });
     return;
   }
-
-  const nextLevel: Record<string, number> = {
-    "Faculty review": 1,
-    "Maintenance review": 2,
-    "Admin review": 3,
-    "Dean review": 4,
-    Rejected: 4,
-  };
 
   try {
     const [authorization] = await sql`
@@ -571,13 +669,19 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
       return;
     }
 
-    if (nextLevel[status]) {
+    const approvalLevelByRole: Record<string, number> = {
+      faculty: 1,
+      maintenance: 2,
+      admin: 3,
+      dean: 4,
+    };
+    if (approvalLevelByRole[authorization.role]) {
       await sql`
         insert into approval (
           booking_id, approved_user_id, approval_level, status, date_actioned, remarks
         )
         values (
-          ${bookingId}, ${userId}, ${nextLevel[status]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null}
+          ${bookingId}, ${userId}, ${approvalLevelByRole[authorization.role]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null}
         )
         on conflict (booking_id, approval_level)
         do update set
@@ -588,6 +692,7 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
       `;
     }
 
+    await createBookingNotifications(bookingId, status, authorization.role, remarks);
     response.json(booking);
   } catch {
     response.status(409).json({ error: "Unable to update booking status" });

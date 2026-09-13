@@ -31,6 +31,10 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 Open `http://localhost:5173`. The Vite server proxies `/api` requests to the API on port `3001`. Existing databases should also run [database/migrations/002_date_aware_availability.sql](database/migrations/002_date_aware_availability.sql) to prevent overlapping non-rejected room requests.
 
+## In-app notifications
+
+Run [database/migrations/003_in_app_notifications.sql](database/migrations/003_in_app_notifications.sql) once against an existing database. New requests and workflow changes appear in the notification bell for the organization and the next responsible role. Rejections include the reviewer’s reason.
+
 ## ERD Database Design
 
 The following relational design is intended for Neon PostgreSQL. The executable reference schema is in [database/schema.sql](database/schema.sql).

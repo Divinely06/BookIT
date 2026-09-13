@@ -3,6 +3,72 @@ import { sql } from "./_db.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "15mb" } } };
 
+async function createBookingNotifications(bookingId: number, status: string, actorRole: string, remarks?: string) {
+  try {
+    const [booking] = await sql`
+      select b.event_name, b.org_id, b.requested_by_user_id, o.faculty_adviser_id, o.org_name
+      from booking b
+      join student_organization o on o.org_id = b.org_id
+      where b.booking_id = ${bookingId}
+    `;
+    if (!booking) return;
+
+    const roleLabels: Record<string, string> = {
+      organization: "the organization",
+      faculty: "the faculty adviser",
+      maintenance: "maintenance",
+      admin: "the administrator",
+      dean: "the Dean",
+    };
+    const actor = roleLabels[actorRole] ?? actorRole;
+    const nextStage = status === "Maintenance review"
+      ? "maintenance"
+      : status === "Admin review"
+        ? "administrator"
+        : status === "Dean review"
+          ? "the Dean"
+          : "the organization";
+    const outcome = status === "Rejected"
+      ? `The request was rejected by ${actor}. Reason: ${remarks || "No reason provided"}`
+      : status === "Approved"
+        ? "The request was approved by the Dean."
+        : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
+    const nextRole = status === "Maintenance review"
+      ? "maintenance"
+      : status === "Admin review"
+        ? "admin"
+        : status === "Dean review"
+          ? "dean"
+          : "";
+    const recipients = await sql`
+      select distinct recipient.user_id
+      from (
+        select b.requested_by_user_id as user_id
+        from booking b where b.booking_id = ${bookingId}
+        union
+        select membership.user_id
+        from user_organization membership
+        where membership.org_id = ${booking.org_id} and membership.status = 'Active'
+        union
+        select ${booking.faculty_adviser_id} as user_id
+        where ${status} = 'Faculty review'
+        union
+        select u.user_id
+        from app_user u where u.role = ${nextRole}
+      ) recipient
+      where recipient.user_id is not null
+    `;
+    for (const recipient of recipients) {
+      await sql`
+        insert into notification (user_id, booking_id, title, message)
+        values (${recipient.user_id}, ${bookingId}, ${`Booking update: ${booking.event_name}`}, ${outcome})
+      `;
+    }
+  } catch (error) {
+    console.error("In-app booking notification failed", error);
+  }
+}
+
 async function listBookings(response: Response) {
   const { userId, role } = (response.req as Request).query;
   if (!["organization", "faculty", "maintenance", "admin", "dean"].includes(String(role)) || !userId || Number.isNaN(Number(userId))) {
@@ -200,6 +266,7 @@ export default async function handler(request: Request, response: Response) {
           where ${"equipmentId" in request ? sql`equipment_id = ${request.equipmentId}` : sql`equipment_name = ${request.name}`}
         `;
       }
+      await createBookingNotifications(Number(booking.booking_id), "Faculty review", "organization");
       response.status(201).json({ created: true, bookingId: booking.booking_id });
       return;
     }
@@ -232,12 +299,11 @@ export default async function handler(request: Request, response: Response) {
         response.status(403).json({ error: "You are not authorized for this workflow step" });
         return;
       }
-      const levels: Record<string, number> = {
-        "Maintenance review": 1,
-        "Admin review": 2,
-        "Dean review": 3,
-        Approved: 4,
-        Rejected: 4,
+      const approvalLevelByRole: Record<string, number> = {
+        faculty: 1,
+        maintenance: 2,
+        admin: 3,
+        dean: 4,
       };
       await sql`
         update booking
@@ -245,10 +311,10 @@ export default async function handler(request: Request, response: Response) {
             rejection_reason = ${status === "Rejected" ? remarks ?? "No reason provided" : null}
         where booking_id = ${bookingId}
       `;
-      if (levels[status]) {
+      if (approvalLevelByRole[authorization.role]) {
         await sql`
           insert into approval (booking_id, approved_user_id, approval_level, status, date_actioned, remarks)
-          values (${bookingId}, ${userId}, ${levels[status]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null})
+          values (${bookingId}, ${userId}, ${approvalLevelByRole[authorization.role]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null})
           on conflict (booking_id, approval_level) do update set
             approved_user_id = excluded.approved_user_id,
             status = excluded.status,
@@ -256,6 +322,7 @@ export default async function handler(request: Request, response: Response) {
             remarks = excluded.remarks
         `;
       }
+      await createBookingNotifications(bookingId, status, authorization.role, remarks);
       response.json({ updated: true });
       return;
     }

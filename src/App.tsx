@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 const apiBase = "";
 const sessionStorageKey = "cardinal-resource-hub-session";
@@ -14,6 +14,15 @@ type UserSession = {
   name: string;
   email: string;
 };
+type AppNotification = {
+  notification_id: number;
+  booking_id?: number;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+type NotificationToast = AppNotification;
 type StoredSession = {
   role: Role;
   user?: UserSession;
@@ -612,6 +621,10 @@ function Shell({
   onLogout: () => void;
   children: React.ReactNode;
 }) {
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [toast, setToast] = useState<NotificationToast | null>(null);
+  const knownNotificationIds = useRef<Set<number> | null>(null);
   const info = roleInfo[role];
   const displayName = role === "organization" ? organizationName ?? info.name : user?.name ?? info.name;
   const displayInitials = user?.name
@@ -661,6 +674,40 @@ function Shell({
                 ["requests", "Dean review", "☷"],
                 ["history", "Final decisions", "◷"],
               ];
+  useEffect(() => {
+    if (!user?.userId) return;
+    const refreshNotifications = () => {
+      fetch(`${apiBase}/api/notifications?userId=${user.userId}`)
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unable to load notifications")))
+        .then((items: AppNotification[]) => {
+          const knownIds = knownNotificationIds.current;
+          if (knownIds) {
+            const newest = items.find((item) => !knownIds.has(item.notification_id) && !item.is_read);
+            if (newest) setToast(newest);
+          }
+          knownNotificationIds.current = new Set(items.map((item) => item.notification_id));
+          setNotifications(items);
+        })
+        .catch(() => undefined);
+    };
+    refreshNotifications();
+    const interval = window.setInterval(refreshNotifications, 5000);
+    return () => window.clearInterval(interval);
+  }, [user?.userId]);
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 7000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+  const unreadCount = notifications.filter((item) => !item.is_read).length;
+  const markNotificationRead = async (notificationId: number) => {
+    setNotifications((items) => items.map((item) => item.notification_id === notificationId ? { ...item, is_read: true } : item));
+    await fetch(`${apiBase}/api/notifications?id=${notificationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user?.userId }),
+    }).catch(() => undefined);
+  };
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -712,12 +759,59 @@ function Shell({
             <span>{info.label}</span>
           </div>
           <div className="top-actions">
-            <span className="notification">◌</span>
+            <div className="notification-wrap">
+              <button
+                className="notification-button"
+                aria-label="Open notifications"
+                onClick={() => setNotificationsOpen((open) => !open)}
+              >
+                <span className="notification">◌</span>
+                {unreadCount > 0 && <b className="notification-count">{unreadCount > 9 ? "9+" : unreadCount}</b>}
+              </button>
+              {notificationsOpen && (
+                <div className="notification-menu">
+                  <div className="notification-menu-header">
+                    <b>Notifications</b>
+                    <span>{unreadCount ? `${unreadCount} unread` : "All caught up"}</span>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <p className="notification-empty">No notifications yet.</p>
+                  ) : notifications.map((item) => (
+                    <button
+                      className={`notification-item ${item.is_read ? "read" : "unread"}`}
+                      key={item.notification_id}
+                      onClick={() => markNotificationRead(item.notification_id)}
+                    >
+                      <b>{item.title}</b>
+                      <span>{item.message}</span>
+                      <small>{new Date(item.created_at).toLocaleString()}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <span className="online">
               <i /> Campus operations online
             </span>
           </div>
         </header>
+        {toast && (
+          <button
+            className="notification-toast"
+            onClick={() => {
+              markNotificationRead(toast.notification_id);
+              setNotificationsOpen(true);
+              setToast(null);
+            }}
+          >
+            <span className="toast-dot" />
+            <span>
+              <b>{toast.title}</b>
+              <small>{toast.message}</small>
+            </span>
+            <span className="toast-close" aria-hidden="true">×</span>
+          </button>
+        )}
         <div className="content">{children}</div>
       </main>
     </div>

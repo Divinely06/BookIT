@@ -111,6 +111,19 @@ create table approval (
   unique (booking_id, approval_level)
 );
 
+create table notification (
+  notification_id integer generated always as identity primary key,
+  user_id integer not null references app_user(user_id) on delete cascade,
+  booking_id integer references booking(booking_id) on delete cascade,
+  title text not null,
+  message text not null,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index notification_user_created_idx
+  on notification(user_id, created_at desc);
+
 alter table booking
   add constraint no_overlapping_room_bookings
   exclude using gist (
