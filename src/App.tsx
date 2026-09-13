@@ -681,10 +681,8 @@ function Shell({
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unable to load notifications")))
         .then((items: AppNotification[]) => {
           const knownIds = knownNotificationIds.current;
-          if (knownIds) {
-            const newest = items.find((item) => !knownIds.has(item.notification_id) && !item.is_read);
-            if (newest) setToast(newest);
-          }
+          const newest = items.find((item) => !item.is_read && (!knownIds || !knownIds.has(item.notification_id)));
+          if (newest) setToast(newest);
           knownNotificationIds.current = new Set(items.map((item) => item.notification_id));
           setNotifications(items);
         })
