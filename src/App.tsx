@@ -6,7 +6,9 @@ let notificationAudioContext: AudioContext | null = null;
 const getNotificationAudioContext = () => {
   const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) return null;
-  notificationAudioContext ??= new AudioContextClass();
+  if (!notificationAudioContext || notificationAudioContext.state === "closed") {
+    notificationAudioContext = new AudioContextClass();
+  }
   return notificationAudioContext;
 };
 const playNotificationSound = () => {
@@ -28,7 +30,7 @@ const playNotificationSound = () => {
     oscillator.stop(now + 0.35);
   };
   if (context.state === "suspended") {
-    context.resume().then(playTone).catch(() => void context.close());
+    context.resume().then(playTone).catch(() => undefined);
   } else {
     playTone();
   }
@@ -724,7 +726,9 @@ function Shell({
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unable to load notifications")))
         .then((items: AppNotification[]) => {
           const knownIds = knownNotificationIds.current;
-          const newest = items.find((item) => !item.is_read && (!knownIds || !knownIds.has(item.notification_id)));
+          const newest = knownIds
+            ? items.find((item) => !item.is_read && !knownIds.has(item.notification_id))
+            : undefined;
           if (newest) {
             setToast(newest);
             playNotificationSound();
