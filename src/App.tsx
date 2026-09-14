@@ -815,7 +815,6 @@ function Shell({
             <span>{info.label}</span>
           </div>
           <div className="top-actions">
-<<<<<<< HEAD
             <div className="notification-wrap">
               <button
                 className="notification-button"
@@ -855,11 +854,6 @@ function Shell({
                 </div>
               )}
             </div>
-=======
-            <button className="notification" type="button" aria-label="Notifications">
-              <span aria-hidden="true" />
-            </button>
->>>>>>> 454ac12 (changed notification icon)
             <span className="online">
               <i /> Campus operations online
             </span>

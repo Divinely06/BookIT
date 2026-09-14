@@ -475,13 +475,12 @@ button {
   gap: 22px;
   align-items: center;
 }
-<<<<<<< HEAD
 .notification-wrap {
   position: relative;
 }
 .notification-button {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 0;
   border-radius: 50%;
   background: #242629;
@@ -501,8 +500,8 @@ button {
   outline-offset: 3px;
 }
 .notification-bell {
-  width: 16px;
-  height: 18px;
+  width: 14px;
+  height: 16px;
   position: relative;
   display: block;
 }
@@ -510,8 +509,8 @@ button {
   position: absolute;
   left: 2px;
   top: 2px;
-  width: 12px;
-  height: 13px;
+  width: 10px;
+  height: 12px;
   border-radius: 7px 7px 3px 3px;
   background: #f7f4ed;
 }
@@ -520,7 +519,7 @@ button {
   position: absolute;
   left: -2px;
   bottom: -2px;
-  width: 16px;
+  width: 14px;
   height: 2px;
   border-radius: 3px;
   background: #f7f4ed;
@@ -528,7 +527,7 @@ button {
 .bell-dome::before {
   content: "";
   position: absolute;
-  left: 5px;
+  left: 4px;
   top: -3px;
   width: 3px;
   height: 4px;
@@ -537,7 +536,7 @@ button {
 }
 .bell-clapper {
   position: absolute;
-  left: 5px;
+  left: 4px;
   bottom: 0;
   width: 5px;
   height: 4px;
@@ -723,48 +722,6 @@ button {
 @keyframes notification-toast-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-=======
-.notification {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: #252525;
-  color: #fff;
-}
-.notification span {
-  width: 11px;
-  height: 12px;
-  display: block;
-  position: relative;
-  border: 1.5px solid currentColor;
-  border-bottom: 0;
-  border-radius: 7px 7px 2px 2px;
-}
-.notification span::before {
-  content: "";
-  position: absolute;
-  left: -3px;
-  right: -3px;
-  bottom: -2px;
-  border-bottom: 1.5px solid currentColor;
-}
-.notification span::after {
-  content: "";
-  position: absolute;
-  width: 3px;
-  height: 2px;
-  left: 3px;
-  bottom: -5px;
-  border-radius: 0 0 3px 3px;
-  background: currentColor;
-}
-.notification:hover {
-  background: #111;
->>>>>>> 454ac12 (changed notification icon)
 }
 .online {
   font-size: 10px;
