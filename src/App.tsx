@@ -823,8 +823,9 @@ function Shell({
                 onClick={() => setNotificationsOpen((open) => !open)}
               >
                 <span className="notification-bell" aria-hidden="true">
-                  <span className="bell-dome" />
-                  <span className="bell-clapper" />
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                  </svg>
                 </span>
                 {unreadCount > 0 && <b className="notification-count">{unreadCount > 9 ? "9+" : unreadCount}</b>}
               </button>
