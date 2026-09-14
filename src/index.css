@@ -475,6 +475,7 @@ button {
   gap: 22px;
   align-items: center;
 }
+<<<<<<< HEAD
 .notification-wrap {
   position: relative;
 }
@@ -722,6 +723,48 @@ button {
 @keyframes notification-toast-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+=======
+.notification {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #252525;
+  color: #fff;
+}
+.notification span {
+  width: 11px;
+  height: 12px;
+  display: block;
+  position: relative;
+  border: 1.5px solid currentColor;
+  border-bottom: 0;
+  border-radius: 7px 7px 2px 2px;
+}
+.notification span::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: -2px;
+  border-bottom: 1.5px solid currentColor;
+}
+.notification span::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 2px;
+  left: 3px;
+  bottom: -5px;
+  border-radius: 0 0 3px 3px;
+  background: currentColor;
+}
+.notification:hover {
+  background: #111;
+>>>>>>> 454ac12 (changed notification icon)
 }
 .online {
   font-size: 10px;
