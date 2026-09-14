@@ -22,7 +22,7 @@ const playNotificationSound = () => {
     oscillator.frequency.setValueAtTime(740, now);
     oscillator.frequency.setValueAtTime(988, now + 0.1);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.3, now + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
     oscillator.connect(gain);
     gain.connect(context.destination);
