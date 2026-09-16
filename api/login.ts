@@ -33,6 +33,7 @@ export default async function handler(req: any, res: any) {
       left join student_organization o
         on lower(o.contact_email) = lower(u.email)
       where lower(u.email) = lower(${email.trim()})
+        and (o.org_id is null or o.status = 'Active')
       limit 1
     `;
     const user = rows[0];
