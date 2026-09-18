@@ -590,6 +590,13 @@ function Auth({
                   <label className="check">
                     <input type="checkbox" /> Remember me
                   </label>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setMessage("Please use the contact details below to reset your password.")}
+                  >
+                    Forgot password?
+                  </button>
                 </div>
               </>
             )}
@@ -611,10 +618,11 @@ function Auth({
             </button>
           )}
           {mode === "login" && (
-            <p className="auth-contact">
-              For organization accounts, contact the administrator. For faculty,
-              maintenance, admin, and dean accounts, contact the DOIT.
-            </p>
+            <div className="auth-contact">
+              <b>Need a password reset?</b>
+              <span>Organization accounts: contact the administrator.</span>
+              <span>Faculty, maintenance, admin, and dean accounts: contact the DOIT.</span>
+            </div>
           )}
           <p className="auth-footer">
             School of Information Technology
