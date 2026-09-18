@@ -610,6 +610,12 @@ function Auth({
               ← Back to sign in
             </button>
           )}
+          {mode === "login" && (
+            <p className="auth-contact">
+              For organization accounts, contact the administrator. For faculty,
+              maintenance, admin, and dean accounts, contact the DOIT.
+            </p>
+          )}
           <p className="auth-footer">
             School of Information Technology
           </p>
