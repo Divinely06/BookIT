@@ -670,6 +670,7 @@ function Shell({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [toast, setToast] = useState<NotificationToast | null>(null);
   const knownNotificationIds = useRef<Set<number> | null>(null);
+  const notificationWrapRef = useRef<HTMLDivElement | null>(null);
   const info = roleInfo[role];
   const displayName = role === "organization" ? organizationName ?? info.name : user?.name ?? info.name;
   const displayInitials = user?.name
@@ -759,6 +760,23 @@ function Shell({
     const timeout = window.setTimeout(() => setToast(null), 7000);
     return () => window.clearTimeout(timeout);
   }, [toast]);
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!notificationWrapRef.current?.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNotificationsOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [notificationsOpen]);
   const unreadCount = notifications.filter((item) => !item.is_read).length;
   const markNotificationRead = async (notificationId: number) => {
     setNotifications((items) => items.map((item) => item.notification_id === notificationId ? { ...item, is_read: true } : item));
@@ -819,7 +837,7 @@ function Shell({
             <span>{info.label}</span>
           </div>
           <div className="top-actions">
-            <div className="notification-wrap">
+            <div className="notification-wrap" ref={notificationWrapRef}>
               <button
                 className="notification-button"
                 aria-label="Open notifications"
@@ -845,7 +863,10 @@ function Shell({
                     <button
                       className={`notification-item ${item.is_read ? "read" : "unread"}`}
                       key={item.notification_id}
-                      onClick={() => markNotificationRead(item.notification_id)}
+                      onClick={() => {
+                        markNotificationRead(item.notification_id);
+                        setNotificationsOpen(false);
+                      }}
                     >
                       <i className={`notification-icon ${notificationVisual(item.title).tone}`}>{notificationVisual(item.title).icon}</i>
                       <span className="notification-copy">
