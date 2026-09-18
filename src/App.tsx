@@ -445,8 +445,7 @@ function Auth({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (mode === "forgot") {
-      setMode("reset");
-      setMessage("A secure reset link has been sent to your Mapúa email.");
+      setMessage("Please contact your system administrator to reset your account password.");
       return;
     }
     if (mode === "reset") {
@@ -542,14 +541,14 @@ function Auth({
             {mode === "login"
               ? "Sign in to BookIT"
               : mode === "forgot"
-                ? "Recover your account"
+                ? "Contact your administrator"
                 : "Create a new password"}
           </h2>
           <p className="muted">
             {mode === "login"
               ? "Use your Mapúa University account to continue."
               : mode === "forgot"
-                ? "Enter your email and we’ll send a secure reset link."
+                ? "Enter your email so the administrator can identify your account."
                 : "Choose a strong password for your Resource Hub account."}
           </p>
           {message && <div className="notice">{message}</div>}
@@ -625,7 +624,7 @@ function Auth({
               {mode === "login"
                 ? "Sign in"
                 : mode === "forgot"
-                  ? "Send reset link"
+                  ? "Contact administrator"
                   : "Update password"}
             </Button>
           </form>
