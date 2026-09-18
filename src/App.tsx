@@ -436,7 +436,7 @@ function Auth({
   organizations: Organization[];
   onLogin: (role: Role, organizationId?: number, user?: UserSession) => void;
 }) {
-  const [mode, setMode] = useState<"login" | "forgot" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -444,10 +444,6 @@ function Auth({
   const [message, setMessage] = useState("");
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (mode === "forgot") {
-      setMessage("Please contact your system administrator to reset your account password.");
-      return;
-    }
     if (mode === "reset") {
       if (password.length < 4 || password !== confirmPassword) {
         setMessage("Passwords must match and be at least 4 characters.");
@@ -540,28 +536,15 @@ function Auth({
           <h2>
             {mode === "login"
               ? "Sign in to BookIT"
-              : mode === "forgot"
-                ? "Contact your administrator"
-                : "Create a new password"}
+              : "Create a new password"}
           </h2>
           <p className="muted">
             {mode === "login"
               ? "Use your Mapúa University account to continue."
-              : mode === "forgot"
-                ? "Enter your email so the administrator can identify your account."
-                : "Choose a strong password for your Resource Hub account."}
+              : "Choose a strong password for your Resource Hub account."}
           </p>
           {message && <div className="notice">{message}</div>}
           <form onSubmit={submit}>
-            {mode === "forgot" && (
-              <Field
-                label="University email"
-                type="email"
-                value={email}
-                onChange={setEmail}
-                placeholder="you@mapua.edu.ph"
-              />
-            )}
             {mode === "reset" && (
               <>
                 <Field
@@ -607,25 +590,13 @@ function Auth({
                   <label className="check">
                     <input type="checkbox" /> Remember me
                   </label>
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => {
-                      setMode("forgot");
-                      setMessage("");
-                    }}
-                  >
-                    Forgot password?
-                  </button>
                 </div>
               </>
             )}
             <Button type="submit">
               {mode === "login"
                 ? "Sign in"
-                : mode === "forgot"
-                  ? "Contact administrator"
-                  : "Update password"}
+                : "Update password"}
             </Button>
           </form>
           {mode !== "login" && (
@@ -2160,7 +2131,11 @@ function Organizations({
       const response = await fetch(`${apiBase}/api/organizations`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId: editing.id, facultyAdviser }),
+        body: JSON.stringify({
+          orgId: editing.id,
+          facultyAdviser,
+          password: password.trim() || undefined,
+        }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));

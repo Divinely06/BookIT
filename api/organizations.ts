@@ -5,9 +5,13 @@ const sql = neon(process.env.DATABASE_URL!);
 
 export default async function handler(request: Request, response: Response) {
   if (request.method === "PATCH") {
-    const { orgId, facultyAdviser, status } = request.body ?? {};
-    if (!orgId || (!facultyAdviser && !status)) {
+    const { orgId, facultyAdviser, password, status } = request.body ?? {};
+    if (!orgId || (!facultyAdviser && !password && !status)) {
       response.status(400).json({ error: "Organization and an update are required" });
+      return;
+    }
+    if (password !== undefined && (typeof password !== "string" || password.length < 4)) {
+      response.status(400).json({ error: "Password must be at least 4 characters" });
       return;
     }
     try {
@@ -29,6 +33,19 @@ export default async function handler(request: Request, response: Response) {
       if (!organization) {
         response.status(404).json({ error: "Organization not found" });
         return;
+      }
+      if (password) {
+        const [account] = await sql`
+          update app_user
+          set password_hash = crypt(${password}, gen_salt('bf'))
+          where lower(email) = lower(${organization.contact_email})
+            and role = 'organization'
+          returning user_id
+        `;
+        if (!account) {
+          response.status(404).json({ error: "Organization login account not found" });
+          return;
+        }
       }
       response.json(organization);
     } catch {
