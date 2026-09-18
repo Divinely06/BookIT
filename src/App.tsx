@@ -436,7 +436,7 @@ function Auth({
   organizations: Organization[];
   onLogin: (role: Role, organizationId?: number, user?: UserSession) => void;
 }) {
-  const [mode, setMode] = useState<"login" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "forgot" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -536,15 +536,25 @@ function Auth({
           <h2>
             {mode === "login"
               ? "Sign in to BookIT"
-              : "Create a new password"}
+              : mode === "forgot"
+                ? "Need a password reset?"
+                : "Create a new password"}
           </h2>
           <p className="muted">
             {mode === "login"
               ? "Use your Mapúa University account to continue."
-              : "Choose a strong password for your Resource Hub account."}
+              : mode === "forgot"
+                ? "Use the appropriate contact below to reset your account password."
+                : "Choose a strong password for your Resource Hub account."}
           </p>
           {message && <div className="notice">{message}</div>}
           <form onSubmit={submit}>
+            {mode === "forgot" && (
+              <div className="auth-contact auth-contact-page">
+                <span>Organization accounts: contact the administrator.</span>
+                <span>Faculty, maintenance, admin, and dean accounts: contact the DOIT.</span>
+              </div>
+            )}
             {mode === "reset" && (
               <>
                 <Field
@@ -593,18 +603,21 @@ function Auth({
                   <button
                     type="button"
                     className="text-button"
-                    onClick={() => setMessage("Please use the contact details below to reset your password.")}
+                    onClick={() => {
+                      setMode("forgot");
+                      setMessage("");
+                    }}
                   >
                     Forgot password?
                   </button>
                 </div>
               </>
             )}
-            <Button type="submit">
-              {mode === "login"
-                ? "Sign in"
-                : "Update password"}
-            </Button>
+            {mode !== "forgot" && (
+              <Button type="submit">
+                {mode === "login" ? "Sign in" : "Update password"}
+              </Button>
+            )}
           </form>
           {mode !== "login" && (
             <button
@@ -616,13 +629,6 @@ function Auth({
             >
               ← Back to sign in
             </button>
-          )}
-          {mode === "login" && (
-            <div className="auth-contact">
-              <b>Need a password reset?</b>
-              <span>Organization accounts: contact the administrator.</span>
-              <span>Faculty, maintenance, admin, and dean accounts: contact the DOIT.</span>
-            </div>
           )}
           <p className="auth-footer">
             School of Information Technology
