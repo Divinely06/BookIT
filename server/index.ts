@@ -594,6 +594,31 @@ app.post("/api/bookings", async (request, response) => {
     return;
   }
 
+  const [room] = await sql`
+    select room_id
+    from room
+    where room_id = ${Number(roomId)} and availability_status = 'Available'
+  `;
+  if (!room) {
+    response.status(409).json({ error: "This venue is unavailable" });
+    return;
+  }
+
+  const [roomConflict] = await sql`
+    select booking_id
+    from booking
+    where room_id = ${Number(roomId)}
+      and event_date = ${eventDate}::date
+      and status <> 'Rejected'
+      and (${eventDate}::date + ${startTime}::time, ${eventDate}::date + ${endTime}::time)
+        overlaps (event_date + start_time, event_date + end_time)
+    limit 1
+  `;
+  if (roomConflict) {
+    response.status(409).json({ error: "This venue is already requested for that date and time" });
+    return;
+  }
+
   try {
     const [booking] = await sql`
       insert into booking (
