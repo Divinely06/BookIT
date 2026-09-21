@@ -616,8 +616,8 @@ button {
 .toast-dot.faculty {
   background: #3c6eaa;
 }
-.notification-icon.maintenance,
-.toast-dot.maintenance {
+.notification-icon.cdmo,
+.toast-dot.cdmo {
   background: #a06a2c;
 }
 .notification-icon.admin,
@@ -883,7 +883,7 @@ button {
 }
 .status-faculty-review,
 .status-admin-review,
-.status-maintenance-review,
+.status-cdmo-review,
 .status-dean-review {
   background: #fdf5e7;
   color: #9a6b24;

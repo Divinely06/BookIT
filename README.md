@@ -20,7 +20,7 @@ Admin performs the first operational review, the CDMO performs the fourth-stage 
 
 ### Existing Neon databases
 
-Run [database/migrations/004_cdmo_approval_workflow.sql](database/migrations/004_cdmo_approval_workflow.sql) after the earlier migrations to replace the old Maintenance/Dean workflow with the CDMO workflow.
+Run [database/migrations/004_cdmo_approval_workflow.sql](database/migrations/004_cdmo_approval_workflow.sql) after the earlier migrations to replace the old workflow roles with CDMO.
 
 After deploying the booking workflow changes, run [database/migrations/001_booking_workflow.sql](database/migrations/001_booking_workflow.sql) once against the existing Neon database. It adds the idempotency key and document content type without removing existing bookings or files. Fresh databases should use [database/schema.sql](database/schema.sql).
 

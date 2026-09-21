@@ -694,6 +694,8 @@ function Shell({
             ? [
                 ["dashboard", "Overview", "⌂"],
                 ["requests", "CDMO review", "☷"],
+                ["equipment", "Equipment", "▣"],
+                ["management", "Manage equipment", "▦"],
                 ["history", "CDMO history", "◷"],
               ]
             : [
@@ -1806,7 +1808,7 @@ function StaffView({
       <Management
         facilities={availableFacilities}
         equipment={availableEquipment}
-        equipmentOnly={role === "admin"}
+        equipmentOnly={role === "cdmo"}
       />
     );
   }
@@ -2454,7 +2456,7 @@ function Management({
   return (
     <>
       <Header
-        eyebrow={equipmentOnly ? "MAINTENANCE / EQUIPMENT" : "ADMINISTRATION / RESOURCES"}
+        eyebrow={equipmentOnly ? "CDMO / EQUIPMENT" : "ADMINISTRATION / RESOURCES"}
         title={equipmentOnly ? "Manage equipment" : "Manage campus resources"}
         sub={equipmentOnly ? "Add, edit, and check equipment availability for every setup." : "Keep facility and equipment information accurate for every requester."}
         action={
