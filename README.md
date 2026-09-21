@@ -1,6 +1,6 @@
 # Cardinal Resource Hub
 
-Cardinal Resource Hub is a Mapúa University facility and equipment reservation system for organizations, faculty reviewers, maintenance staff, administrators, and the Dean.
+Cardinal Resource Hub is a Mapúa University facility and equipment reservation system for organizations, faculty reviewers, administrators, and the CDMO.
 
 ## Repository Layout
 
@@ -14,11 +14,13 @@ vite.config.ts       Vite development and production configuration
 
 ## Approval Flow
 
-`Organization submission → Faculty review → Maintenance handling → Admin review → Dean final decision → Approved`
+`Organization request → Faculty review → Admin review → CDMO review → Final Admin approval`
 
-The Dean is the final authority for budget, policy, and campus-rule decisions. Admin manages the resources and performs the operational review immediately before the Dean's decision.
+Admin performs the first operational review, the CDMO performs the fourth-stage review, and Admin makes the final approval decision.
 
 ### Existing Neon databases
+
+Run [database/migrations/004_cdmo_approval_workflow.sql](database/migrations/004_cdmo_approval_workflow.sql) after the earlier migrations to replace the old Maintenance/Dean workflow with the CDMO workflow.
 
 After deploying the booking workflow changes, run [database/migrations/001_booking_workflow.sql](database/migrations/001_booking_workflow.sql) once against the existing Neon database. It adds the idempotency key and document content type without removing existing bookings or files. Fresh databases should use [database/schema.sql](database/schema.sql).
 
@@ -56,7 +58,7 @@ erDiagram
 			string full_name
 			string email UK
 			string password_hash
-			string role "organization | faculty | maintenance | admin | dean"
+			string role "organization | faculty | admin | cdmo"
 			string contact_number
 		}
 		STUDENT_ORGANIZATION {
@@ -90,7 +92,7 @@ erDiagram
 			time start_time
 			time end_time
 			string purpose
-			string status "Faculty review | Maintenance review | Admin review | Dean review | Approved | Prepared | Rejected"
+			string status "Faculty review | Admin review | CDMO review | Final admin review | Approved | Prepared | Rejected"
 		}
 		BOOKING_EQUIPMENT {
 			int booking_id PK, FK
@@ -109,7 +111,7 @@ erDiagram
 			int approval_id PK
 			int booking_id FK
 			int approved_user_id FK
-			int approval_level "1 Faculty, 2 Maintenance, 3 Admin, 4 Dean"
+			int approval_level "1 Faculty, 2 Admin, 3 CDMO, 4 Final Admin"
 			string status
 			datetime date_actioned
 			string remarks
@@ -122,6 +124,5 @@ erDiagram
 | --- | --- | --- |
 | Organization | Owns its account, submits event requests, and tracks bookings | Creates `BOOKING`, `DOCUMENT`, and `BOOKING_EQUIPMENT` records |
 | Faculty | Reviews the organization submission and adviser documents | Creates level 1 `APPROVAL` records |
-| Maintenance | Checks equipment and setup after faculty approval | Creates level 2 `APPROVAL` records and updates readiness |
-| Admin | Manages rooms, equipment, organizations, and operational review | Creates level 3 `APPROVAL` records |
-| Dean | Makes the final decision on budget, policy, and campus rules | Creates level 4 `APPROVAL` records and moves the booking to `Approved` or `Rejected` |
+| Admin | Performs the first and final operational reviews | Creates level 2 and level 4 `APPROVAL` records |
+| CDMO | Reviews requests after the first Admin approval | Creates level 3 `APPROVAL` records |

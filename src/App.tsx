@@ -40,7 +40,7 @@ const localDateValue = () => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-type Role = "organization" | "faculty" | "admin" | "maintenance" | "dean";
+type Role = "organization" | "faculty" | "admin" | "cdmo";
 type UserSession = {
   userId: number;
   role: Role;
@@ -57,13 +57,11 @@ type AppNotification = {
 };
 const notificationVisual = (title: string) => title.includes("Faculty")
   ? { icon: "✦", tone: "faculty" }
-  : title.includes("Maintenance")
-    ? { icon: "⚒", tone: "maintenance" }
+  : title.includes("CDMO")
+    ? { icon: "◆", tone: "cdmo" }
     : title.includes("Admin")
       ? { icon: "⚙", tone: "admin" }
-      : title.includes("Dean")
-        ? { icon: "♛", tone: "dean" }
-        : title.includes("rejected")
+      : title.includes("rejected")
           ? { icon: "×", tone: "rejected" }
           : { icon: "✓", tone: "organization" };
 const isActionNotification = (title: string) => title.endsWith("needed");
@@ -75,9 +73,9 @@ type StoredSession = {
 };
 type Status =
   | "Faculty review"
-  | "Maintenance review"
   | "Admin review"
-  | "Dean review"
+  | "CDMO review"
+  | "Final admin review"
   | "Approved"
   | "Prepared"
   | "Rejected";
@@ -278,7 +276,7 @@ const initialBookings: Booking[] = [
     date: "Sep 20, 2026",
     time: "8:00 AM – 5:00 PM",
     people: 150,
-    status: "Dean review",
+    status: "Final admin review",
     equipment: ["Wireless Microphone × 4", "LCD Projector × 2"],
     purpose: "Annual leadership training and summit for organization officers.",
     requestedByUserId: 101,
@@ -331,15 +329,10 @@ const roleInfo: Record<
     initials: "MS",
   },
   admin: { name: "Administrator", label: "Administrator", initials: "AD" },
-  maintenance: {
-    name: "Alex Dela Cruz",
-    label: "Maintenance handler",
-    initials: "AD",
-  },
-  dean: {
-    name: "Dean Villanueva",
-    label: "Dean / final authority",
-    initials: "DV",
+  cdmo: {
+    name: "CDMO Officer",
+    label: "CDMO reviewer",
+    initials: "CD",
   },
 };
 
@@ -490,7 +483,7 @@ function Auth({
         item.email.toLowerCase() === email.trim().toLowerCase() &&
         item.password === password,
     );
-    const staffRole = ["faculty", "admin", "maintenance", "dean"].find(
+    const staffRole = ["faculty", "admin", "cdmo"].find(
       (role) => `${role}@mapua.edu.ph` === email.trim().toLowerCase(),
     ) as Role | undefined;
     const fallbackUser: UserSession | undefined = email.trim().toLowerCase() === "eblancaflor@mapua.edu.ph"
@@ -519,8 +512,8 @@ function Auth({
             where ideas happen.
           </h1>
           <p className="auth-copy">
-            A single place for organizations, faculty, maintenance, and
-            administrators to move every event forward.
+            A single place for organizations, faculty, administrators, and
+            the CDMO to move every event forward.
           </p>
         </div>
         <div className="auth-note">
@@ -552,7 +545,7 @@ function Auth({
             {mode === "forgot" && (
               <div className="auth-contact auth-contact-page">
                 <span>Organization accounts: contact the administrator.</span>
-                <span>Faculty, maintenance, admin, and dean accounts: contact the DOIT.</span>
+                <span>Faculty, admin, and CDMO accounts: contact the DOIT.</span>
               </div>
             )}
             {mode === "reset" && (
@@ -697,18 +690,16 @@ function Shell({
               ["bookings", "Approved bookings", "✓"],
               ["history", "Booking records", "◷"],
             ]
-          : role === "maintenance"
+          : role === "cdmo"
             ? [
                 ["dashboard", "Overview", "⌂"],
-                ["requests", "Maintenance queue", "☷"],
-                ["equipment", "Equipment", "▣"],
-                ["management", "Manage equipment", "▦"],
-                ["history", "Completed setups", "✓"],
+                ["requests", "CDMO review", "☷"],
+                ["history", "CDMO history", "◷"],
               ]
             : [
                 ["dashboard", "Overview", "⌂"],
-                ["requests", "Dean review", "☷"],
-                ["history", "Final decisions", "◷"],
+                ["requests", "Final admin review", "☷"],
+                ["history", "Booking records", "◷"],
               ];
   useEffect(() => {
     if (!user?.userId) return;
@@ -1006,16 +997,15 @@ function Dashboard({
 }) {
   const faculty = role === "faculty";
   const admin = role === "admin";
-  const maintenance = role === "maintenance";
+  const cdmo = role === "cdmo";
   const organization = role === "organization";
-  const dean = role === "dean";
   const pendingReview = bookings.filter((booking) =>
-    ["Faculty review", "Maintenance review", "Admin review", "Dean review"].includes(
+      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
       booking.status,
     ),
   ).length;
   const inProgressBookings = bookings.filter((booking) =>
-    ["Faculty review", "Maintenance review", "Admin review", "Dean review"].includes(
+      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
       booking.status,
     ),
   ).length;
@@ -1037,21 +1027,17 @@ function Dashboard({
             ? `Good morning, ${user?.name ?? "Faculty reviewer"}.`
             : admin
               ? "Operations overview"
-              : dean
-                ? "Dean Villanueva, final decisions"
-                : maintenance
-                ? "Ready for today’s setup."
+              : cdmo
+                ? "Review CDMO-cleared requests."
                 : `Good morning, ${organizationName ?? "organization team"}.`
         }
         sub={
           faculty
-            ? "Review event submissions before they move to maintenance."
+            ? "Review event submissions before they move to Admin."
             : admin
-              ? "Confirm bookings after faculty approval and maintenance handling."
-              : dean
-                ? "Make the final call on budget, policy, and campus rules for administrator-cleared bookings."
-                : maintenance
-                ? "Handle equipment and setup after faculty approval."
+              ? "Review bookings after faculty approval and before CDMO review."
+              : cdmo
+                ? "Review administrator-cleared bookings before final Admin approval."
                 : "Submit events and follow them through every approval stage."
         }
         action={onBook && <Button onClick={onBook}>＋ New booking</Button>}
@@ -1069,17 +1055,11 @@ function Dashboard({
             <Stat label="Approved bookings" value={approvedBookings} tone="green" />
             <Stat label="Active venues" value={availableFacilities.filter((facility) => facility.status === "Available").length} tone="blue" />
           </>
-        ) : dean ? (
+        ) : cdmo ? (
           <>
-            <Stat label="Dean review" value={bookings.filter((booking) => booking.status === "Dean review").length} tone="amber" />
-            <Stat label="Final decisions" value={bookings.filter((booking) => ["Approved", "Rejected"].includes(booking.status)).length} tone="green" />
-            <Stat label="Budget checks" value={bookings.filter((booking) => booking.status === "Dean review").length} tone="blue" />
-          </>
-        ) : maintenance ? (
-          <>
-            <Stat label="Maintenance queue" value={bookings.filter((booking) => booking.status === "Maintenance review").length} tone="amber" />
-            <Stat label="Ready for pickup" value={bookings.filter((booking) => booking.status === "Prepared").length} tone="green" />
-            <Stat label="This week" value={bookings.length} tone="blue" />
+            <Stat label="CDMO review" value={bookings.filter((booking) => booking.status === "CDMO review").length} tone="amber" />
+            <Stat label="Completed reviews" value={bookings.filter((booking) => ["Final admin review", "Approved", "Rejected"].includes(booking.status)).length} tone="green" />
+            <Stat label="In progress" value={pendingReview} tone="blue" />
           </>
         ) : organization ? (
           <>
@@ -1098,10 +1078,8 @@ function Dashboard({
           title={
             faculty
               ? "Requests for faculty review"
-              : dean
-                ? "Dean decisions"
-                : maintenance
-                ? "Maintenance queue"
+              : cdmo
+                ? "CDMO review queue"
                 : admin
                   ? "Final booking review"
                   : "Recent requests"
@@ -1129,10 +1107,10 @@ function Dashboard({
                 <i style={{ width: organization ? "100%" : `${onTrack}%` }} />
             </div>
             <p>
-              {dean
-                ? "Review administrator-cleared requests and approve or reject them based on budget, policy, and campus rules."
+              {cdmo
+                ? "Review administrator-cleared requests before they return to Admin for final approval."
                 : organization
-                ? "Org request → Faculty review → Maintenance handling → Admin confirmation → Dean decision."
+                ? "Org request → Faculty review → Admin review → CDMO review → Final Admin approval."
                 : "Campus operations are running normally. No system alerts today."}
             </p>
             <Button
@@ -1367,7 +1345,7 @@ function StudentView({
                 ? "Approved bookings"
                 : "Booking history"
           }
-          sub="Track your request through org request, faculty review, maintenance handling, admin confirmation, and the final dean decision."
+          sub="Track your request through org request, faculty review, admin review, CDMO review, and final admin approval."
         />
         {submitted && (
           <div className="notice success">
@@ -1774,7 +1752,7 @@ function BookingForm({
               <span>Your adviser checks the event details and documents.</span>
             </li>
             <li>
-              <b>Maintenance handling</b>
+              <b>Admin review</b>
               <span>
                 Equipment and setup are checked after faculty approval.
               </span>
@@ -1786,7 +1764,7 @@ function BookingForm({
               </span>
             </li>
             <li>
-              <b>Dean decision</b>
+              <b>CDMO review</b>
               <span>
                 Final approval is made based on budget, policy, and campus rules.
               </span>
@@ -1828,7 +1806,7 @@ function StaffView({
       <Management
         facilities={availableFacilities}
         equipment={availableEquipment}
-        equipmentOnly={role === "maintenance"}
+        equipmentOnly={role === "admin"}
       />
     );
   }
@@ -1843,7 +1821,7 @@ function StaffView({
     return (
       <>
         <Header
-          eyebrow="MAINTENANCE / INVENTORY"
+          eyebrow="ADMINISTRATION / INVENTORY"
           title="Equipment inventory"
           sub="Check quantities and condition before confirming a setup."
         />
@@ -1884,25 +1862,24 @@ function StaffView({
         ? page === "history"
           ? bookings.filter((b) =>
               [
-                "Maintenance review",
                 "Admin review",
+                "CDMO review",
+                "Final admin review",
                 "Approved",
                 "Prepared",
               ].includes(b.status),
             )
           : bookings.filter((b) => b.status === "Faculty review")
-        : role === "maintenance"
-          ? bookings.filter((b) => b.status === "Maintenance review")
+        : role === "cdmo"
+          ? page === "history"
+            ? bookings.filter((b) => ["Final admin review", "Approved", "Rejected"].includes(b.status))
+            : bookings.filter((b) => b.status === "CDMO review")
           : role === "admin"
             ? page === "bookings"
               ? bookings.filter((b) => ["Approved", "Prepared"].includes(b.status))
               : page === "history"
                 ? bookings
                 : bookings.filter((b) => b.status === "Admin review")
-              : role === "dean"
-              ? page === "history"
-                ? bookings.filter((b) => ["Approved", "Rejected"].includes(b.status))
-                : bookings
               : page === "bookings"
                 ? bookings.filter((b) => ["Approved", "Prepared"].includes(b.status))
                 : bookings;
@@ -1911,12 +1888,10 @@ function StaffView({
         ? page === "history"
           ? "Approved request history"
           : "Faculty event review"
-        : role === "maintenance"
-          ? "Maintenance handling"
-          : role === "dean"
-            ? page === "history"
-              ? "Final decision history"
-              : "Dean final review"
+        : role === "cdmo"
+          ? page === "history"
+            ? "CDMO review history"
+            : "CDMO review"
           : page === "bookings"
             ? "Approved and upcoming bookings"
             : "Booking records";
@@ -1929,10 +1904,8 @@ function StaffView({
           sub={
             role === "faculty"
               ? "History shows requests that passed faculty review."
-              : role === "maintenance"
-                ? "Confirm equipment and setup after faculty approval."
-                : role === "dean"
-                  ? "Make the final decision on budget, policy, and campus rules after Admin review."
+              : role === "cdmo"
+                ? "Review requests after the first Admin approval."
                 : page === "bookings"
                   ? "Approved bookings that are upcoming or currently in progress."
                   : "Complete management records and history."
@@ -1945,7 +1918,7 @@ function StaffView({
           <Review
             booking={selected}
             role={role}
-            readOnly={readOnly || (role === "dean" && selected.status !== "Dean review")}
+            readOnly={readOnly || (role === "admin" && selected.status !== "Admin review" && selected.status !== "Final admin review")}
             onClose={() => setSelected(null)}
             onUpdate={async (status, remarks) => {
               setActionError("");
@@ -2013,19 +1986,21 @@ function Review({
   const [remarks, setRemarks] = useState("");
   const nextStatus =
     role === "faculty"
-      ? "Maintenance review"
-      : role === "maintenance"
-        ? "Admin review"
-        : role === "admin"
-          ? "Dean review"
-        : "Approved";
+      ? "Admin review"
+      : role === "admin"
+        ? booking.status === "Final admin review"
+          ? "Approved"
+          : "CDMO review"
+        : role === "cdmo"
+          ? "Final admin review"
+          : "Approved";
   const approveLabel =
     role === "faculty"
-      ? "Approve for maintenance"
-      : role === "maintenance"
-        ? "Confirm maintenance complete"
-        : role === "admin"
-          ? "Send to Dean"
+      ? "Send to Admin"
+      : role === "admin"
+        ? booking.status === "Final admin review" ? "Confirm final booking" : "Send to CDMO"
+        : role === "cdmo"
+          ? "Send to final Admin"
           : "Confirm final booking";
   return (
     <div className="modal-backdrop">
@@ -2810,7 +2785,7 @@ export default function App() {
   const [storedSession] = useState<StoredSession | null>(() => {
     try {
       const parsed = JSON.parse(localStorage.getItem(sessionStorageKey) ?? "null") as StoredSession | null;
-      if (!parsed || !["organization", "faculty", "admin", "maintenance", "dean"].includes(parsed.role)) return null;
+      if (!parsed || !["organization", "faculty", "admin", "cdmo"].includes(parsed.role)) return null;
       return parsed;
     } catch {
       return null;

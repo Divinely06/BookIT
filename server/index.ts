@@ -17,38 +17,37 @@ async function createBookingNotifications(bookingId: number, status: string, act
     const roleLabels: Record<string, string> = {
       organization: "the organization",
       faculty: "the faculty adviser",
-      maintenance: "maintenance",
       admin: "the administrator",
-      dean: "the Dean",
+      cdmo: "the CDMO",
     };
     const actor = roleLabels[actorRole] ?? actorRole;
-    const nextStage = status === "Maintenance review"
-      ? "maintenance"
-      : status === "Admin review"
-        ? "administrator"
-        : status === "Dean review"
-          ? "the Dean"
+    const nextStage = status === "Admin review"
+      ? "the administrator"
+      : status === "CDMO review"
+        ? "the CDMO"
+        : status === "Final admin review"
+          ? "the administrator"
           : "the organization";
     const outcome = status === "Rejected"
       ? `The request was rejected by ${actor}. Reason: ${remarks || "No reason provided"}`
       : status === "Approved"
-        ? "The request was approved by the Dean."
+        ? "The request was approved by the administrator."
         : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
-    const nextRole = status === "Maintenance review"
-      ? "maintenance"
-      : status === "Admin review"
+    const nextRole = status === "Admin review"
+      ? "admin"
+      : status === "CDMO review"
+        ? "cdmo"
+      : status === "Final admin review"
         ? "admin"
-        : status === "Dean review"
-          ? "dean"
-          : "";
+        : "";
     const notificationTitle = status === "Faculty review"
       ? "Faculty review needed"
-      : status === "Maintenance review"
-        ? "Maintenance review needed"
-        : status === "Admin review"
-          ? "Admin review needed"
-          : status === "Dean review"
-            ? "Dean review needed"
+      : status === "Admin review"
+        ? "Admin review needed"
+        : status === "CDMO review"
+          ? "CDMO review needed"
+          : status === "Final admin review"
+            ? "Final admin review needed"
             : status === "Rejected"
               ? "Booking request rejected"
               : "Booking request approved";
@@ -148,7 +147,7 @@ app.get("/api/bookings", async (request, response) => {
   try {
     const userId = Number(request.query.userId);
     const role = String(request.query.role ?? "");
-    if (!["organization", "faculty", "maintenance", "admin", "dean"].includes(role) || !userId) {
+    if (!["organization", "faculty", "admin", "cdmo"].includes(role) || !userId) {
       response.status(401).json({ error: "Faculty identity is required" });
       return;
     }
@@ -185,7 +184,7 @@ app.get("/api/bookings", async (request, response) => {
           where membership.user_id = ${userId}
             and membership.org_id = o.org_id and membership.status = 'Active'
         ))
-        or ${role} in ('maintenance', 'admin', 'dean')
+        or ${role} in ('admin', 'cdmo')
       )
       order by b.date_requested desc
     `;
@@ -696,12 +695,15 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
       where b.booking_id = ${bookingId}
     `;
     const transitions: Record<string, { current: string; next: string[] }> = {
-      faculty: { current: "Faculty review", next: ["Maintenance review", "Rejected"] },
-      maintenance: { current: "Maintenance review", next: ["Admin review", "Rejected"] },
-      admin: { current: "Admin review", next: ["Dean review", "Rejected"] },
-      dean: { current: "Dean review", next: ["Approved", "Rejected"] },
+      faculty: { current: "Faculty review", next: ["Admin review", "Rejected"] },
+      admin: { current: "Admin review", next: ["CDMO review", "Rejected"] },
+      cdmo: { current: "CDMO review", next: ["Final admin review", "Rejected"] },
+      final_admin: { current: "Final admin review", next: ["Approved", "Rejected"] },
     };
-    const rule = authorization ? transitions[authorization.role] : undefined;
+    const workflowRole = authorization?.role === "admin" && authorization.current_status === "Final admin review"
+      ? "final_admin"
+      : authorization?.role;
+    const rule = authorization ? transitions[workflowRole] : undefined;
     const assigned = authorization?.role === "faculty"
       ? authorization.faculty_adviser_id === Number(userId)
       : Boolean(rule);
@@ -724,10 +726,12 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
 
     const approvalLevelByRole: Record<string, number> = {
       faculty: 1,
-      maintenance: 2,
-      admin: 3,
-      dean: 4,
+      admin: 2,
+      cdmo: 3,
     };
+    if (authorization.role === "admin" && authorization.current_status === "Final admin review") {
+      approvalLevelByRole.admin = 4;
+    }
     if (approvalLevelByRole[authorization.role]) {
       await sql`
         insert into approval (

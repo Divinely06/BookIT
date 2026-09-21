@@ -7,8 +7,7 @@ insert into app_user (full_name, email, password_hash, role, contact_number)
 values
   ('Prof. Maria Santos', 'faculty@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'faculty', null),
   ('Administrator', 'admin@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'admin', null),
-  ('Alex Dela Cruz', 'maintenance@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'maintenance', null),
-  ('Dean Villanueva', 'dean@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'dean', null),
+  ('CDMO Officer', 'cdmo@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'cdmo', null),
   ('SSC Requester', 'ssc@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'organization', null),
   ('ITSS Requester', 'itss@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'organization', null),
   ('BEC Requester', 'bec@mapua.edu.ph', crypt('demo', gen_salt('bf')), 'organization', null)
@@ -83,7 +82,7 @@ select
   booking_data.status
 from (
   values
-    ('Supreme Student Council', 'ssc@mapua.edu.ph', 'Multi-Purpose Hall', 'Leadership Summit 2026', 150, date '2026-09-20', time '08:00', time '17:00', 'Annual leadership training and summit for organization officers.', 'seed-leadership-summit-2026', 'Dean review'),
+    ('Supreme Student Council', 'ssc@mapua.edu.ph', 'Multi-Purpose Hall', 'Leadership Summit 2026', 150, date '2026-09-20', time '08:00', time '17:00', 'Annual leadership training and summit for organization officers.', 'seed-leadership-summit-2026', 'Final admin review'),
     ('IT Students Society', 'itss@mapua.edu.ph', 'Audio-Visual Room', 'Tech Talk Series: AI in Industry', 60, date '2026-09-25', time '13:00', time '17:00', 'Speaker series featuring industry professionals in AI and technology.', 'seed-tech-talk-2026', 'Faculty review'),
     ('Business Enthusiasts Club', 'bec@mapua.edu.ph', 'Multi-Purpose Hall', 'Entrepreneurship Fair 2026', 200, date '2026-10-05', time '09:00', time '16:00', 'Annual fair showcasing student business projects.', 'seed-entrepreneurship-fair-2026', 'Prepared')
 ) as booking_data(
