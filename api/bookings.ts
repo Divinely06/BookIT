@@ -21,11 +21,11 @@ async function createBookingNotifications(bookingId: number, status: string, act
       cdmo: "the CDMO",
     };
     const actor = roleLabels[actorRole] ?? actorRole;
-    const nextStage = status === "Dean review"
-      ? "the dean"
+    const nextStage = status === "Admin review"
+      ? "the administrator"
       : status === "CDMO review"
         ? "the CDMO"
-        : status === "Admin review"
+        : status === "Final admin review"
           ? "the administrator"
           : "the organization";
     const outcome = status === "Rejected"
@@ -33,21 +33,21 @@ async function createBookingNotifications(bookingId: number, status: string, act
       : status === "Approved"
         ? "The request was approved by the administrator."
         : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
-    const nextRole = status === "Dean review"
-      ? "dean"
+    const nextRole = status === "Admin review"
+      ? "admin"
       : status === "CDMO review"
         ? "cdmo"
-        : status === "Admin review"
+        : status === "Final admin review"
           ? "admin"
           : "";
     const notificationTitle = status === "Faculty review"
       ? "Faculty review needed"
-      : status === "Dean review"
-        ? "Dean review needed"
+      : status === "Admin review"
+        ? "Admin review needed"
         : status === "CDMO review"
           ? "CDMO review needed"
-          : status === "Admin review"
-            ? "Admin review needed"
+          : status === "Final admin review"
+            ? "Admin confirmation needed"
             : status === "Rejected"
               ? "Booking request rejected"
               : "Booking request approved";
@@ -299,12 +299,17 @@ export default async function handler(request: Request, response: Response) {
         where b.booking_id = ${bookingId}
       `;
       const transitions: Record<string, { current: string; next: string[] }> = {
-        faculty: { current: "Faculty review", next: ["Dean review", "Rejected"] },
-        dean: { current: "Dean review", next: ["CDMO review", "Rejected"] },
-        cdmo: { current: "CDMO review", next: ["Admin review", "Rejected"] },
-        admin: { current: "Admin review", next: ["Approved", "Rejected"] },
+        faculty: { current: "Faculty review", next: ["Admin review", "Rejected"] },
+        admin_review: { current: "Admin review", next: ["CDMO review", "Rejected"] },
+        cdmo: { current: "CDMO review", next: ["Final admin review", "Rejected"] },
+        final_admin: { current: "Final admin review", next: ["Approved", "Rejected"] },
       };
-      const rule = authorization ? transitions[authorization.role] : undefined;
+      const workflowRole = authorization?.role === "admin" && authorization.current_status === "Admin review"
+        ? "admin_review"
+        : authorization?.role === "admin" && authorization.current_status === "Final admin review"
+          ? "final_admin"
+          : authorization?.role;
+      const rule = authorization ? transitions[workflowRole] : undefined;
       const assigned = authorization?.role === "faculty"
         ? authorization.faculty_adviser_id === Number(userId)
         : Boolean(rule);
@@ -314,9 +319,9 @@ export default async function handler(request: Request, response: Response) {
       }
       const approvalLevelByRole: Record<string, number> = {
         faculty: 1,
-        dean: 2,
+        admin_review: 2,
         cdmo: 3,
-        admin: 4,
+        final_admin: 4,
       };
       await sql`
         update booking
@@ -324,10 +329,10 @@ export default async function handler(request: Request, response: Response) {
             rejection_reason = ${status === "Rejected" ? remarks ?? "No reason provided" : null}
         where booking_id = ${bookingId}
       `;
-      if (approvalLevelByRole[authorization.role]) {
+      if (approvalLevelByRole[workflowRole]) {
         await sql`
           insert into approval (booking_id, approved_user_id, approval_level, status, date_actioned, remarks)
-          values (${bookingId}, ${userId}, ${approvalLevelByRole[authorization.role]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null})
+          values (${bookingId}, ${userId}, ${approvalLevelByRole[workflowRole]}, ${status === "Rejected" ? "Rejected" : "Approved"}, now(), ${remarks ?? null})
           on conflict (booking_id, approval_level) do update set
             approved_user_id = excluded.approved_user_id,
             status = excluded.status,

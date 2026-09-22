@@ -70,8 +70,8 @@ create table booking (
   status text not null default 'Faculty review'
     check (
       status in (
-        'Faculty review', 'Dean review', 'CDMO review',
-        'Admin review', 'Approved', 'Prepared', 'Rejected'
+        'Faculty review', 'Admin review', 'CDMO review',
+        'Final admin review', 'Approved', 'Prepared', 'Rejected'
       )
     ),
   check (end_time > start_time),
