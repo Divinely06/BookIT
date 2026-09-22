@@ -40,7 +40,7 @@ const localDateValue = () => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-type Role = "organization" | "faculty" | "admin" | "cdmo";
+type Role = "organization" | "faculty" | "dean" | "cdmo" | "admin";
 type UserSession = {
   userId: number;
   role: Role;
@@ -73,9 +73,9 @@ type StoredSession = {
 };
 type Status =
   | "Faculty review"
-  | "Admin review"
+  | "Dean review"
   | "CDMO review"
-  | "Final admin review"
+  | "Admin review"
   | "Approved"
   | "Prepared"
   | "Rejected";
@@ -276,7 +276,7 @@ const initialBookings: Booking[] = [
     date: "Sep 20, 2026",
     time: "8:00 AM – 5:00 PM",
     people: 150,
-    status: "Final admin review",
+    status: "Admin review",
     equipment: ["Wireless Microphone × 4", "LCD Projector × 2"],
     purpose: "Annual leadership training and summit for organization officers.",
     requestedByUserId: 101,
@@ -328,6 +328,7 @@ const roleInfo: Record<
     label: "Faculty reviewer",
     initials: "MS",
   },
+  dean: { name: "Dean Reviewer", label: "Dean reviewer", initials: "DR" },
   admin: { name: "Administrator", label: "Administrator", initials: "AD" },
   cdmo: {
     name: "CDMO Officer",
@@ -483,7 +484,7 @@ function Auth({
         item.email.toLowerCase() === email.trim().toLowerCase() &&
         item.password === password,
     );
-    const staffRole = ["faculty", "admin", "cdmo"].find(
+    const staffRole = ["faculty", "dean", "admin", "cdmo"].find(
       (role) => `${role}@mapua.edu.ph` === email.trim().toLowerCase(),
     ) as Role | undefined;
     const fallbackUser: UserSession | undefined = email.trim().toLowerCase() === "eblancaflor@mapua.edu.ph"
@@ -681,7 +682,13 @@ function Shell({
             ["requests", "Faculty review", "☷"],
             ["history", "Approval history", "◷"],
           ]
-        : role === "admin"
+        : role === "dean"
+          ? [
+              ["dashboard", "Overview", "⌂"],
+              ["requests", "Dean review", "☷"],
+              ["history", "Approval history", "◷"],
+            ]
+          : role === "admin"
           ? [
               ["dashboard", "Overview", "⌂"],
               ["requests", "Final booking review", "☷"],
@@ -700,7 +707,7 @@ function Shell({
               ]
             : [
                 ["dashboard", "Overview", "⌂"],
-                ["requests", "Final admin review", "☷"],
+                ["requests", "Admin review", "☷"],
                 ["history", "Booking records", "◷"],
               ];
   useEffect(() => {
@@ -998,16 +1005,17 @@ function Dashboard({
   onBook?: () => void;
 }) {
   const faculty = role === "faculty";
+  const dean = role === "dean";
   const admin = role === "admin";
   const cdmo = role === "cdmo";
   const organization = role === "organization";
   const pendingReview = bookings.filter((booking) =>
-      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
+      ["Faculty review", "Dean review", "CDMO review", "Admin review"].includes(
       booking.status,
     ),
   ).length;
   const inProgressBookings = bookings.filter((booking) =>
-      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
+      ["Faculty review", "Dean review", "CDMO review", "Admin review"].includes(
       booking.status,
     ),
   ).length;
@@ -1027,6 +1035,8 @@ function Dashboard({
         title={
           faculty
             ? `Good morning, ${user?.name ?? "Faculty reviewer"}.`
+            : dean
+              ? `Good morning, ${user?.name ?? "Dean reviewer"}.`
             : admin
               ? "Operations overview"
               : cdmo
@@ -1036,10 +1046,12 @@ function Dashboard({
         sub={
           faculty
             ? "Review event submissions before they move to Admin."
+            : dean
+              ? "Review faculty-cleared event submissions before they move to CDMO."
             : admin
-              ? "Review bookings after faculty approval and before CDMO review."
+              ? "Complete final approval after CDMO review."
               : cdmo
-                ? "Review administrator-cleared bookings before final Admin approval."
+                ? "Review dean-cleared bookings before final Admin approval."
                 : "Submit events and follow them through every approval stage."
         }
         action={onBook && <Button onClick={onBook}>＋ New booking</Button>}
@@ -1048,6 +1060,12 @@ function Dashboard({
         {faculty ? (
           <>
             <Stat label="Faculty review" value={bookings.filter((booking) => booking.status === "Faculty review").length} tone="amber" />
+            <Stat label="Approved this term" value={approvedBookings} tone="green" />
+            <Stat label="Approval rate" value={`${onTrack}%`} tone="blue" />
+          </>
+        ) : dean ? (
+          <>
+            <Stat label="Dean review" value={bookings.filter((booking) => booking.status === "Dean review").length} tone="amber" />
             <Stat label="Approved this term" value={approvedBookings} tone="green" />
             <Stat label="Approval rate" value={`${onTrack}%`} tone="blue" />
           </>
@@ -1060,7 +1078,7 @@ function Dashboard({
         ) : cdmo ? (
           <>
             <Stat label="CDMO review" value={bookings.filter((booking) => booking.status === "CDMO review").length} tone="amber" />
-            <Stat label="Completed reviews" value={bookings.filter((booking) => ["Final admin review", "Approved", "Rejected"].includes(booking.status)).length} tone="green" />
+            <Stat label="Completed reviews" value={bookings.filter((booking) => ["Admin review", "Approved", "Rejected"].includes(booking.status)).length} tone="green" />
             <Stat label="In progress" value={pendingReview} tone="blue" />
           </>
         ) : organization ? (
@@ -1080,6 +1098,8 @@ function Dashboard({
           title={
             faculty
               ? "Requests for faculty review"
+              : dean
+                ? "Requests for dean review"
               : cdmo
                 ? "CDMO review queue"
                 : admin
@@ -1110,9 +1130,11 @@ function Dashboard({
             </div>
             <p>
               {cdmo
-                ? "Review administrator-cleared requests before they return to Admin for final approval."
+                ? "Review dean-cleared requests before they move to Admin for final approval."
+                : dean
+                ? "Review faculty-cleared requests before they move to CDMO."
                 : organization
-                ? "Org request → Faculty review → Admin review → CDMO review → Final Admin approval."
+                ? "Org request → Faculty review → Dean review → CDMO review → Admin approval."
                 : "Campus operations are running normally. No system alerts today."}
             </p>
             <Button
@@ -1347,7 +1369,7 @@ function StudentView({
                 ? "Approved bookings"
                 : "Booking history"
           }
-          sub="Track your request through org request, faculty review, admin review, CDMO review, and final admin approval."
+          sub="Track your request through organization, faculty, dean, CDMO, and admin approval."
         />
         {submitted && (
           <div className="notice success">
@@ -1864,17 +1886,21 @@ function StaffView({
         ? page === "history"
           ? bookings.filter((b) =>
               [
-                "Admin review",
+                "Dean review",
                 "CDMO review",
-                "Final admin review",
+                "Admin review",
                 "Approved",
                 "Prepared",
               ].includes(b.status),
             )
           : bookings.filter((b) => b.status === "Faculty review")
+        : role === "dean"
+          ? page === "history"
+            ? bookings.filter((b) => ["CDMO review", "Admin review", "Approved", "Rejected"].includes(b.status))
+            : bookings.filter((b) => b.status === "Dean review")
         : role === "cdmo"
           ? page === "history"
-            ? bookings.filter((b) => ["Final admin review", "Approved", "Rejected"].includes(b.status))
+            ? bookings.filter((b) => ["Admin review", "Approved", "Rejected"].includes(b.status))
             : bookings.filter((b) => b.status === "CDMO review")
           : role === "admin"
             ? page === "bookings"
@@ -1890,6 +1916,10 @@ function StaffView({
         ? page === "history"
           ? "Approved request history"
           : "Faculty event review"
+        : role === "dean"
+          ? page === "history"
+            ? "Approved request history"
+            : "Dean event review"
         : role === "cdmo"
           ? page === "history"
             ? "CDMO review history"
@@ -1906,8 +1936,10 @@ function StaffView({
           sub={
             role === "faculty"
               ? "History shows requests that passed faculty review."
+              : role === "dean"
+                ? "Review requests that passed faculty review."
               : role === "cdmo"
-                ? "Review requests after the first Admin approval."
+                ? "Review requests after dean approval."
                 : page === "bookings"
                   ? "Approved bookings that are upcoming or currently in progress."
                   : "Complete management records and history."
@@ -1920,7 +1952,7 @@ function StaffView({
           <Review
             booking={selected}
             role={role}
-            readOnly={readOnly || (role === "admin" && selected.status !== "Admin review" && selected.status !== "Final admin review")}
+            readOnly={readOnly || (role === "admin" && selected.status !== "Admin review")}
             onClose={() => setSelected(null)}
             onUpdate={async (status, remarks) => {
               setActionError("");
@@ -1930,9 +1962,7 @@ function StaffView({
               }
               try {
                 const response = await fetch(
-                  import.meta.env.DEV
-                    ? `${apiBase}/api/bookings/${selected.id}/status`
-                    : `${apiBase}/api/bookings?id=${selected.id}`,
+                  `${apiBase}/api/bookings/${selected.id}/status`,
                   {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
@@ -1988,21 +2018,23 @@ function Review({
   const [remarks, setRemarks] = useState("");
   const nextStatus =
     role === "faculty"
-      ? "Admin review"
+      ? "Dean review"
+      : role === "dean"
+        ? "CDMO review"
       : role === "admin"
-        ? booking.status === "Final admin review"
-          ? "Approved"
-          : "CDMO review"
+        ? "Approved"
         : role === "cdmo"
-          ? "Final admin review"
+          ? "Admin review"
           : "Approved";
   const approveLabel =
     role === "faculty"
-      ? "Send to Admin"
+      ? "Send to Dean"
+      : role === "dean"
+        ? "Send to CDMO"
       : role === "admin"
-        ? booking.status === "Final admin review" ? "Confirm final booking" : "Send to CDMO"
+        ? "Confirm final booking"
         : role === "cdmo"
-          ? "Send to final Admin"
+          ? "Send to Admin"
           : "Confirm final booking";
   return (
     <div className="modal-backdrop">

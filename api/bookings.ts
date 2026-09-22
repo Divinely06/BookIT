@@ -16,15 +16,16 @@ async function createBookingNotifications(bookingId: number, status: string, act
     const roleLabels: Record<string, string> = {
       organization: "the organization",
       faculty: "the faculty adviser",
+      dean: "the dean",
       admin: "the administrator",
       cdmo: "the CDMO",
     };
     const actor = roleLabels[actorRole] ?? actorRole;
-    const nextStage = status === "Admin review"
-      ? "the administrator"
+    const nextStage = status === "Dean review"
+      ? "the dean"
       : status === "CDMO review"
         ? "the CDMO"
-        : status === "Final admin review"
+        : status === "Admin review"
           ? "the administrator"
           : "the organization";
     const outcome = status === "Rejected"
@@ -32,21 +33,21 @@ async function createBookingNotifications(bookingId: number, status: string, act
       : status === "Approved"
         ? "The request was approved by the administrator."
         : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
-    const nextRole = status === "Admin review"
-      ? "admin"
+    const nextRole = status === "Dean review"
+      ? "dean"
       : status === "CDMO review"
         ? "cdmo"
-        : status === "Final admin review"
+        : status === "Admin review"
           ? "admin"
           : "";
     const notificationTitle = status === "Faculty review"
       ? "Faculty review needed"
-      : status === "Admin review"
-        ? "Admin review needed"
+      : status === "Dean review"
+        ? "Dean review needed"
         : status === "CDMO review"
           ? "CDMO review needed"
-          : status === "Final admin review"
-            ? "Final admin review needed"
+          : status === "Admin review"
+            ? "Admin review needed"
             : status === "Rejected"
               ? "Booking request rejected"
               : "Booking request approved";
@@ -81,8 +82,8 @@ async function createBookingNotifications(bookingId: number, status: string, act
 
 async function listBookings(response: Response) {
   const { userId, role } = (response.req as Request).query;
-  if (!["organization", "faculty", "admin", "cdmo"].includes(String(role)) || !userId || Number.isNaN(Number(userId))) {
-    response.status(401).json({ error: "Faculty identity is required" });
+  if (!["organization", "faculty", "dean", "admin", "cdmo"].includes(String(role)) || !userId || Number.isNaN(Number(userId))) {
+    response.status(401).json({ error: "A valid user identity is required" });
     return;
   }
   const bookings = await sql`
@@ -108,7 +109,7 @@ async function listBookings(response: Response) {
         where membership.user_id = ${Number(userId)}
           and membership.org_id = o.org_id and membership.status = 'Active'
       ))
-          or ${role} in ('admin', 'cdmo')
+          or ${role} in ('dean', 'admin', 'cdmo')
     )
     order by b.date_requested desc
   `;
@@ -142,12 +143,14 @@ export default async function handler(request: Request, response: Response) {
             select u.user_id from app_user u
             join user_organization membership on membership.user_id = u.user_id
               and membership.org_id = ${orgId} and membership.status = 'Active'
+            join student_organization organization on organization.org_id = membership.org_id
+              and organization.status = 'Active'
             where u.user_id = ${requestedByUserId} and u.role = 'organization'
           `
         : await sql`
             select u.user_id from app_user u
             join student_organization o on o.contact_email = u.email
-            where o.org_id = ${orgId} and u.role = 'organization' limit 1
+            where o.org_id = ${orgId} and o.status = 'Active' and u.role = 'organization' limit 1
           `;
       if (!orgId || !roomId || !requester?.user_id || !eventName || !participantCount || !eventDate || !startTime || !endTime || !purpose) {
         response.status(400).json({ error: "Missing required booking fields" });
@@ -296,15 +299,12 @@ export default async function handler(request: Request, response: Response) {
         where b.booking_id = ${bookingId}
       `;
       const transitions: Record<string, { current: string; next: string[] }> = {
-        faculty: { current: "Faculty review", next: ["Admin review", "Rejected"] },
-        admin: { current: "Admin review", next: ["CDMO review", "Rejected"] },
-        cdmo: { current: "CDMO review", next: ["Final admin review", "Rejected"] },
-        final_admin: { current: "Final admin review", next: ["Approved", "Rejected"] },
+        faculty: { current: "Faculty review", next: ["Dean review", "Rejected"] },
+        dean: { current: "Dean review", next: ["CDMO review", "Rejected"] },
+        cdmo: { current: "CDMO review", next: ["Admin review", "Rejected"] },
+        admin: { current: "Admin review", next: ["Approved", "Rejected"] },
       };
-      const workflowRole = authorization?.role === "admin" && authorization.current_status === "Final admin review"
-        ? "final_admin"
-        : authorization?.role;
-      const rule = transitions[workflowRole];
+      const rule = authorization ? transitions[authorization.role] : undefined;
       const assigned = authorization?.role === "faculty"
         ? authorization.faculty_adviser_id === Number(userId)
         : Boolean(rule);
@@ -314,12 +314,10 @@ export default async function handler(request: Request, response: Response) {
       }
       const approvalLevelByRole: Record<string, number> = {
         faculty: 1,
-        admin: 2,
+        dean: 2,
         cdmo: 3,
+        admin: 4,
       };
-      if (authorization.role === "admin" && authorization.current_status === "Final admin review") {
-        approvalLevelByRole.admin = 4;
-      }
       await sql`
         update booking
         set status = ${status},

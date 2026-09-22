@@ -9,7 +9,7 @@ create table app_user (
   email text not null unique,
   password_hash text not null,
   role text not null check (
-    role in ('organization', 'faculty', 'admin', 'cdmo')
+    role in ('organization', 'faculty', 'dean', 'cdmo', 'admin')
   ),
   contact_number text
 );
@@ -70,8 +70,8 @@ create table booking (
   status text not null default 'Faculty review'
     check (
       status in (
-        'Faculty review', 'Admin review', 'CDMO review',
-        'Final admin review', 'Approved', 'Prepared', 'Rejected'
+        'Faculty review', 'Dean review', 'CDMO review',
+        'Admin review', 'Approved', 'Prepared', 'Rejected'
       )
     ),
   check (end_time > start_time),
