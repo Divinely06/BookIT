@@ -18,7 +18,7 @@ create table student_organization (
   org_id integer generated always as identity primary key,
   org_name text not null unique,
   faculty_adviser_id integer references app_user(user_id),
-  contact_email text not null,
+  contact_email text not null unique references app_user(email),
   status text not null default 'Active'
     check (status in ('Active', 'Pending', 'Inactive'))
 );

@@ -30,8 +30,12 @@ export default async function handler(req: any, res: any) {
         u.password_hash,
         o.org_id as organization_id
       from app_user u
+      left join user_organization membership
+        on membership.user_id = u.user_id
+        and membership.status = 'Active'
       left join student_organization o
-        on lower(o.contact_email) = lower(u.email)
+        on o.org_id = membership.org_id
+        and lower(o.contact_email) = lower(u.email)
       where lower(u.email) = lower(${email.trim()})
         and (o.org_id is null or o.status = 'Active')
       limit 1
@@ -40,6 +44,11 @@ export default async function handler(req: any, res: any) {
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (user.role === "organization" && !user.organization_id) {
+      res.status(409).json({ error: "This organization account is not linked to its organization email" });
       return;
     }
 
