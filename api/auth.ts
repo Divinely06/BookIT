@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import bcrypt from "bcryptjs";
 import { sql } from "./_db.js";
 
 export default async function handler(request: Request, response: Response) {
@@ -19,9 +20,9 @@ export default async function handler(request: Request, response: Response) {
         u.user_id,
         u.full_name,
         u.role,
+        u.password_hash,
         o.org_id,
-        o.org_name,
-        (u.password_hash = crypt(${password}, u.password_hash)) as password_matches
+        o.org_name
       from app_user u
       left join user_organization membership on membership.user_id = u.user_id
         and membership.status = 'Active'
@@ -32,7 +33,7 @@ export default async function handler(request: Request, response: Response) {
       limit 1
     `;
 
-    if (!user || !user.password_matches) {
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       response.status(401).json({ error: "Invalid email or password" });
       return;
     }

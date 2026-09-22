@@ -1,4 +1,5 @@
 import express from "express";
+import bcrypt from "bcryptjs";
 import { sql } from "./db.js";
 
 const app = express();
@@ -111,8 +112,7 @@ app.post(["/api/auth", "/api/login"], async (request, response) => {
 
   try {
     const [user] = await sql`
-      select u.user_id, u.full_name, u.email, u.role, o.org_id, o.org_name,
-        (u.password_hash = crypt(${password}, u.password_hash)) as password_matches
+      select u.user_id, u.full_name, u.email, u.role, u.password_hash, o.org_id, o.org_name
       from app_user u
       left join user_organization membership on membership.user_id = u.user_id
         and membership.status = 'Active'
@@ -122,7 +122,7 @@ app.post(["/api/auth", "/api/login"], async (request, response) => {
         and (o.org_id is null or o.status = 'Active')
       limit 1
     `;
-    if (!user || !user.password_matches) {
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       response.status(401).json({ error: "Invalid email or password" });
       return;
     }
