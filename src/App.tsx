@@ -1780,15 +1780,15 @@ function BookingForm({
               </span>
             </li>
             <li>
-              <b>Admin confirmation</b>
+              <b>CDMO review</b>
               <span>
-                The administrator confirms the booking and final logistics.
+                Final approval is reviewed based on budget, policy, and campus rules.
               </span>
             </li>
             <li>
-              <b>CDMO review</b>
+              <b>Admin confirmation</b>
               <span>
-                Final approval is made based on budget, policy, and campus rules.
+                The administrator confirms the booking and final logistics.
               </span>
             </li>
           </ol>
