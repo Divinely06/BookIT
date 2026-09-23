@@ -70,7 +70,7 @@ create table booking (
   status text not null default 'Faculty review'
     check (
       status in (
-        'Faculty review', 'Admin review', 'CDMO review',
+        'Faculty review', 'Dean review', 'Admin review', 'CDMO review',
         'Final admin review', 'Approved', 'Prepared', 'Rejected'
       )
     ),

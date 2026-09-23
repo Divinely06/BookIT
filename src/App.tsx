@@ -73,6 +73,7 @@ type StoredSession = {
 };
 type Status =
   | "Faculty review"
+  | "Dean review"
   | "CDMO review"
   | "Admin review"
   | "Final admin review"
@@ -685,6 +686,7 @@ function Shell({
         : role === "dean"
           ? [
               ["dashboard", "Overview", "⌂"],
+              ["requests", "Dean approval", "☷"],
               ["history", "Approval history", "◷"],
             ]
           : role === "admin"
@@ -1009,12 +1011,12 @@ function Dashboard({
   const cdmo = role === "cdmo";
   const organization = role === "organization";
   const pendingReview = bookings.filter((booking) =>
-      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
+      ["Faculty review", "Dean review", "Admin review", "CDMO review", "Final admin review"].includes(
       booking.status,
     ),
   ).length;
   const inProgressBookings = bookings.filter((booking) =>
-      ["Faculty review", "Admin review", "CDMO review", "Final admin review"].includes(
+      ["Faculty review", "Dean review", "Admin review", "CDMO review", "Final admin review"].includes(
       booking.status,
     ),
   ).length;
@@ -1039,7 +1041,7 @@ function Dashboard({
             : admin
               ? "Operations overview"
               : cdmo
-                ? "Review CDMO-cleared requests."
+                ? "Review requests."
                 : `Good morning, ${organizationName ?? "organization team"}.`
         }
         sub={
@@ -1050,7 +1052,7 @@ function Dashboard({
             : admin
               ? "Complete final approval after CDMO review."
               : cdmo
-                ? "Review dean-cleared bookings before final Admin approval."
+                ? "Review dean-approved bookings before final Admin approval."
                 : "Submit events and follow them through every approval stage."
         }
         action={onBook && <Button onClick={onBook}>＋ New booking</Button>}
@@ -1132,7 +1134,7 @@ function Dashboard({
                 : dean
                 ? "Dean accounts can view approval history."
                 : organization
-                ? "Org request → Faculty review → Admin review → CDMO review → Admin confirmation."
+                ? "Org request → Faculty review → Dean review → CDMO review → Admin confirmation."
                 : "Campus operations are running normally. No system alerts today."}
             </p>
             <Button
@@ -1332,8 +1334,19 @@ function StudentView({
           sub="Check live inventory before adding equipment to a booking request."
         />
         <Panel title="Equipment inventory">
+          <div className="filter-row">
+            <input
+              className="search"
+              placeholder="Search equipment"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <span className="filter-note">
+              {availableEquipment.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())).length} items
+            </span>
+          </div>
           <div className="venue-list">
-            {availableEquipment.map((item) => {
+            {availableEquipment.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())).map((item) => {
               const available = item.available > 0;
               return (
                 <div className="venue-row equipment-row" key={item.name}>
@@ -1367,7 +1380,7 @@ function StudentView({
                 ? "Approved bookings"
                 : "Booking history"
           }
-          sub="Track your request through organization, faculty, Admin review, CDMO review, and final Admin confirmation."
+          sub="Track your request through organization, faculty, dean, CDMO review, and final Admin confirmation."
         />
         {submitted && (
           <div className="notice success">
@@ -1774,9 +1787,9 @@ function BookingForm({
               <span>Your adviser checks the event details and documents.</span>
             </li>
             <li>
-              <b>Admin review</b>
+              <b>Dean review</b>
               <span>
-                Equipment and setup are checked after faculty approval.
+                The dean approves the department-level request after faculty approval.
               </span>
             </li>
             <li>
@@ -1823,6 +1836,7 @@ function StaffView({
 }) {
   const [selected, setSelected] = useState<Booking | null>(null);
   const [actionError, setActionError] = useState("");
+  const [equipmentQuery, setEquipmentQuery] = useState("");
   if (page === "management") {
     return (
       <Management
@@ -1848,6 +1862,17 @@ function StaffView({
           sub="Check quantities and condition before confirming a setup."
         />
         <Panel title="Current inventory">
+          <div className="filter-row">
+            <input
+              className="search"
+              placeholder="Search equipment"
+              value={equipmentQuery}
+              onChange={(e) => setEquipmentQuery(e.target.value)}
+            />
+            <span className="filter-note">
+              {availableEquipment.filter((item) => item.name.toLowerCase().includes(equipmentQuery.toLowerCase())).length} items
+            </span>
+          </div>
           <div className="table-wrap">
             <table>
               <thead>
@@ -1859,7 +1884,7 @@ function StaffView({
                 </tr>
               </thead>
               <tbody>
-                {availableEquipment.map((e) => (
+                {availableEquipment.filter((e) => e.name.toLowerCase().includes(equipmentQuery.toLowerCase())).map((e) => (
                   <tr key={e.name}>
                     <td>
                       <b>{e.name}</b>
@@ -1884,6 +1909,7 @@ function StaffView({
         ? page === "history"
           ? bookings.filter((b) =>
               [
+                "Dean review",
                 "Final admin review",
                 "CDMO review",
                 "Admin review",
@@ -1893,7 +1919,9 @@ function StaffView({
             )
           : bookings.filter((b) => b.status === "Faculty review")
         : role === "dean"
-          ? bookings
+          ? page === "history"
+            ? bookings.filter((b) => ["CDMO review", "Final admin review", "Approved", "Prepared"].includes(b.status))
+            : bookings.filter((b) => b.status === "Dean review")
         : role === "cdmo"
           ? page === "history"
             ? bookings.filter((b) => ["Final admin review", "Approved", "Rejected"].includes(b.status))
@@ -1913,7 +1941,7 @@ function StaffView({
           ? "Approved request history"
           : "Faculty event review"
         : role === "dean"
-          ? "Approval history"
+          ? page === "history" ? "Approval history" : "Dean approval"
         : role === "cdmo"
           ? page === "history"
             ? "CDMO review history"
@@ -1935,7 +1963,7 @@ function StaffView({
             role === "faculty"
               ? "History shows requests that passed faculty review."
               : role === "dean"
-                ? "View approval history."
+                ? page === "history" ? "View approval history." : "Approve department-level requests before CDMO review."
               : role === "cdmo"
                 ? "Review requests after dean approval."
                 : page === "bookings"
@@ -2016,7 +2044,9 @@ function Review({
   const [remarks, setRemarks] = useState("");
   const nextStatus =
     role === "faculty"
-      ? "Admin review"
+      ? "Dean review"
+      : role === "dean"
+        ? "CDMO review"
       : role === "admin"
         ? booking.status === "Final admin review" ? "Approved" : "CDMO review"
         : role === "cdmo"
@@ -2024,7 +2054,9 @@ function Review({
           : "Approved";
   const approveLabel =
     role === "faculty"
-      ? "Send to Admin"
+      ? "Send to Dean"
+      : role === "dean"
+        ? "Send to CDMO"
       : role === "admin"
         ? booking.status === "Final admin review" ? "Confirm final booking" : "Send to CDMO"
         : role === "cdmo"

@@ -21,8 +21,10 @@ async function createBookingNotifications(bookingId: number, status: string, act
       cdmo: "the CDMO",
     };
     const actor = roleLabels[actorRole] ?? actorRole;
-    const nextStage = status === "Admin review"
-      ? "the administrator"
+    const nextStage = status === "Dean review"
+      ? "the dean"
+      : status === "Admin review"
+        ? "the administrator"
       : status === "CDMO review"
         ? "the CDMO"
         : status === "Final admin review"
@@ -33,8 +35,10 @@ async function createBookingNotifications(bookingId: number, status: string, act
       : status === "Approved"
         ? "The request was approved by the administrator."
         : `The request was approved by ${actor} and is now waiting for ${nextStage}.`;
-    const nextRole = status === "Admin review"
-      ? "admin"
+    const nextRole = status === "Dean review"
+      ? "dean"
+      : status === "Admin review"
+        ? "admin"
       : status === "CDMO review"
         ? "cdmo"
         : status === "Final admin review"
@@ -42,8 +46,10 @@ async function createBookingNotifications(bookingId: number, status: string, act
           : "";
     const notificationTitle = status === "Faculty review"
       ? "Faculty review needed"
-      : status === "Admin review"
-        ? "Admin review needed"
+      : status === "Dean review"
+        ? "Dean review needed"
+        : status === "Admin review"
+          ? "Admin review needed"
         : status === "CDMO review"
           ? "CDMO review needed"
           : status === "Final admin review"
@@ -299,7 +305,8 @@ export default async function handler(request: Request, response: Response) {
         where b.booking_id = ${bookingId}
       `;
       const transitions: Record<string, { current: string; next: string[] }> = {
-        faculty: { current: "Faculty review", next: ["Admin review", "Rejected"] },
+        faculty: { current: "Faculty review", next: ["Dean review", "Rejected"] },
+        dean: { current: "Dean review", next: ["CDMO review", "Rejected"] },
         admin_review: { current: "Admin review", next: ["CDMO review", "Rejected"] },
         cdmo: { current: "CDMO review", next: ["Final admin review", "Rejected"] },
         final_admin: { current: "Final admin review", next: ["Approved", "Rejected"] },
@@ -319,6 +326,7 @@ export default async function handler(request: Request, response: Response) {
       }
       const approvalLevelByRole: Record<string, number> = {
         faculty: 1,
+        dean: 2,
         admin_review: 2,
         cdmo: 3,
         final_admin: 4,
