@@ -82,6 +82,7 @@ type Status =
   | "Rejected";
 type Page =
   | "dashboard"
+  | "proposals"
   | "facilities"
   | "equipment"
   | "requests"
@@ -143,6 +144,70 @@ type ActivityApplicationData = {
   missionAlignment: string[];
   coreValuesExplanation: string;
   peoPo: string;
+};
+
+type ProposalFormData = {
+  school: string;
+  academicYear: string;
+  eventTitle: string;
+  tagline: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  mode: "Face-to-face" | "Online";
+  sdgs: string[];
+  sdgExplanations: Record<string, string>;
+  description: string;
+  objectives: string[];
+  targetParticipants: string;
+  expectedCount: number;
+  strategies: { title: string; description: string }[];
+  eventFlow: { startTime: string; endTime: string; activity: string }[];
+  team: { group: string; position: string; name: string; studentNumber: string; email: string }[];
+  participants: { type: "Officer" | "Adviser" | "Member"; name: string; studentNumber: string; email: string; attended: boolean }[];
+  budget: { category: string; details: string; quantity: number; unitCost: number }[];
+  sponsoredAmount: number;
+  preparedBy: string;
+  notedBy: string;
+};
+
+const emptyProposal = (organizationName: string, userName: string): ProposalFormData => ({
+  school: "Mapúa University",
+  academicYear: "2026-2027",
+  eventTitle: "",
+  tagline: "",
+  eventDate: "",
+  startTime: "09:00",
+  endTime: "16:00",
+  venue: "",
+  mode: "Face-to-face",
+  sdgs: [],
+  sdgExplanations: {},
+  description: "",
+  objectives: [""],
+  targetParticipants: organizationName,
+  expectedCount: 0,
+  strategies: [{ title: "", description: "" }],
+  eventFlow: [{ startTime: "09:00", endTime: "10:00", activity: "" }],
+  team: [{ group: "", position: "", name: userName, studentNumber: "", email: "" }],
+  participants: [{ type: "Officer", name: "", studentNumber: "", email: "", attended: false }],
+  budget: [{ category: "", details: "", quantity: 1, unitCost: 0 }],
+  sponsoredAmount: 0,
+  preparedBy: userName,
+  notedBy: "",
+});
+
+const printEventProposal = (data: ProposalFormData, organizationName: string) => {
+  const popup = window.open("", "_blank", "width=1000,height=1100");
+  if (!popup) return;
+  const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const rows = (items: string[]) => items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item)}</td></tr>`).join("");
+  const strategyRows = data.strategies.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item.title)}</td><td>${escapeHtml(item.description)}</td></tr>`).join("");
+  const flowRows = data.eventFlow.map((item) => `<tr><td>${escapeHtml(item.startTime)} - ${escapeHtml(item.endTime)}</td><td>${escapeHtml(item.activity)}</td></tr>`).join("");
+  const budgetRows = data.budget.map((item) => `<tr><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.details)}</td><td>${item.quantity}</td><td>₱${(item.quantity * item.unitCost).toFixed(2)}</td></tr>`).join("");
+  popup.document.write(`<!doctype html><html><head><title>Event Proposal</title><style>body{font:11px Arial;color:#111;margin:32px;line-height:1.35}h1{text-align:center;font-size:18px;margin:0}h2{font-size:13px;border-bottom:1px solid #111;padding-bottom:4px;margin:18px 0 7px}.meta{text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:6px;border:1px solid #bbb}.wide{grid-column:1/-1}.label{display:block;font-size:8px;text-transform:uppercase;color:#555}table{width:100%;border-collapse:collapse;margin:5px 0 12px}td,th{border:1px solid #aaa;padding:5px;text-align:left}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:55px}.line{border-top:1px solid #111;padding-top:5px}@media print{body{margin:12mm}}</style></head><body><h1>MAPÚA UNIVERSITY</h1><p class="meta"><b>EVENT / PROJECT PROPOSAL</b><br>${escapeHtml(organizationName)} · ${escapeHtml(data.academicYear)}</p><h2>Proposal details</h2><div class="grid"><div class="cell"><span class="label">Event title</span>${escapeHtml(data.eventTitle)}</div><div class="cell"><span class="label">Tagline</span>${escapeHtml(data.tagline)}</div><div class="cell"><span class="label">Date and time</span>${escapeHtml(data.eventDate)} · ${escapeHtml(data.startTime)} - ${escapeHtml(data.endTime)}</div><div class="cell"><span class="label">Venue / mode</span>${escapeHtml(data.venue)} · ${escapeHtml(data.mode)}</div><div class="cell wide"><span class="label">Description</span>${escapeHtml(data.description)}</div><div class="cell"><span class="label">Target participants</span>${escapeHtml(data.targetParticipants)}</div><div class="cell"><span class="label">Expected count</span>${data.expectedCount}</div></div><h2>Objectives</h2><table><tbody>${rows(data.objectives)}</tbody></table><h2>Strategies</h2><table><tr><th>#</th><th>Title</th><th>Description</th></tr>${strategyRows}</table><h2>Event flow</h2><p>Timing is subject to change.</p><table><tr><th>Time</th><th>Activity</th></tr>${flowRows}</table><h2>Budget Proposal</h2><table><tr><th>Category</th><th>Details</th><th>Qty</th><th>Subtotal</th></tr>${budgetRows}</table><p><b>Total:</b> ₱${data.budget.reduce((sum, item) => sum + item.quantity * item.unitCost, 0).toFixed(2)} &nbsp; <b>Sponsored:</b> ₱${data.sponsoredAmount.toFixed(2)}</p><h2>Signatures</h2><div class="signatures"><div class="line">Prepared by: ${escapeHtml(data.preparedBy)}</div><div class="line">Noted by: ${escapeHtml(data.notedBy || "Organization Adviser")}</div></div><script>window.onload=()=>window.print();</script></body></html>`);
+  popup.document.close();
 };
 
 const printActivityApplication = (data: ActivityApplicationData, shared: {
@@ -728,6 +793,7 @@ function Shell({
     role === "organization"
       ? [
           ["dashboard", "Overview", "⌂"],
+          ["proposals", "Event proposals", "▤"],
           ["facilities", "Facilities", "▦"],
           ["equipment", "Equipment", "▣"],
           ["requests", "My requests", "☷"],
@@ -1207,6 +1273,65 @@ function Dashboard({
   );
 }
 
+function EventProposalPage({ user, organization }: { user?: UserSession; organization: Organization }) {
+  const [proposalId, setProposalId] = useState<number | null>(null);
+  const [status, setStatus] = useState("Draft");
+  const [form, setForm] = useState(() => emptyProposal(organization.name, user?.name ?? ""));
+  const [proposals, setProposals] = useState<{ proposal_id: number; status: string; form_data: ProposalFormData }[]>([]);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const update = <K extends keyof ProposalFormData>(key: K, value: ProposalFormData[K]) => setForm((current) => ({ ...current, [key]: value }));
+  const loadProposals = () => fetch(`${apiBase}/api/event-proposals?userId=${user?.userId ?? 0}&orgId=${organization.id}`).then((response) => response.ok ? response.json() : []).then((items: typeof proposals) => {
+    setProposals(items);
+    const draft = items.find((item) => item.status === "Draft");
+    if (draft) { setProposalId(draft.proposal_id); setStatus(draft.status); setForm({ ...emptyProposal(organization.name, user?.name ?? ""), ...draft.form_data }); }
+  }).catch(() => undefined);
+  useEffect(() => { void loadProposals(); }, [organization.id, user?.userId]);
+  const save = async (submit = false) => {
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch(`${apiBase}/api/event-proposals`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proposalId, orgId: organization.id, userId: user?.userId, formData: form, submit }) });
+      const result = await response.json().catch(() => null) as { proposal_id?: number; status?: string; error?: string } | null;
+      if (!response.ok) throw new Error(result?.error ?? "Unable to save proposal");
+      if (result?.proposal_id) setProposalId(result.proposal_id);
+      if (result?.status) setStatus(result.status);
+      setMessage(submit ? "Proposal submitted for adviser notation." : "Draft saved.");
+      void loadProposals();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save proposal"); }
+    finally { setSaving(false); }
+  };
+  const total = form.budget.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+  return <>
+    <Header eyebrow="EVENT PROPOSAL" title="Create an event proposal" sub={`${organization.name}. This proposal is independent from bookings and SAAF.`} />
+    <div className="form-layout">
+      <form className="panel form-panel" onSubmit={(event) => { event.preventDefault(); void save(true); }}>
+        <div className="form-section"><h3>Proposal details</h3><div className="form-grid">
+          <Field label="School" type="text" value={form.school} onChange={(value) => update("school", value)} placeholder="Mapúa University" />
+          <Field label="Academic year" type="text" value={form.academicYear} onChange={(value) => update("academicYear", value)} placeholder="2026-2027" />
+          <Field label="Event title" type="text" value={form.eventTitle} onChange={(value) => update("eventTitle", value)} placeholder="Event title" />
+          <Field label="Tagline" type="text" value={form.tagline} onChange={(value) => update("tagline", value)} placeholder="Optional tagline" />
+          <Field label="Date" type="date" value={form.eventDate} onChange={(value) => update("eventDate", value)} placeholder="" min={localDateValue()} />
+          <div className="field"><label>Time</label><div className="time-row"><input type="time" value={form.startTime} onChange={(event) => update("startTime", event.target.value)} /><input type="time" value={form.endTime} onChange={(event) => update("endTime", event.target.value)} /></div></div>
+          <Field label="Venue" type="text" value={form.venue} onChange={(value) => update("venue", value)} placeholder="Venue or online link" />
+          <div className="field"><label>Mode</label><div className="choice-row">{["Face-to-face", "Online"].map((value) => <label key={value}><input type="radio" checked={form.mode === value} onChange={() => update("mode", value as ProposalFormData["mode"])} /> {value}</label>)}</div></div>
+          <div className="field full"><label>Event description</label><textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={4} /></div>
+          <Field label="Target participants" type="text" value={form.targetParticipants} onChange={(value) => update("targetParticipants", value)} placeholder="Organizations, classes, or community" />
+          <Field label="Expected count" type="number" value={String(form.expectedCount)} onChange={(value) => update("expectedCount", Number(value) || 0)} placeholder="0" />
+        </div></div>
+        <div className="form-section"><h3>SDGs and objectives</h3><div className="choice-grid">{["SDG 3 Good Health", "SDG 4 Quality Education", "SDG 5 Gender Equality", "SDG 10 Reduced Inequalities", "SDG 11 Sustainable Cities", "SDG 17 Partnerships"].map((sdg) => <label key={sdg}><input type="checkbox" checked={form.sdgs.includes(sdg)} onChange={(event) => update("sdgs", event.target.checked ? [...form.sdgs, sdg] : form.sdgs.filter((item) => item !== sdg))} /> {sdg}</label>)}</div>{form.sdgs.map((sdg) => <div className="field" key={sdg}><label>{sdg} explanation</label><input value={form.sdgExplanations[sdg] ?? ""} onChange={(event) => update("sdgExplanations", { ...form.sdgExplanations, [sdg]: event.target.value })} /></div>)}<div className="repeat-list">{form.objectives.map((objective, index) => <div className="repeat-row" key={index}><input value={objective} placeholder={`Objective ${index + 1}`} onChange={(event) => update("objectives", form.objectives.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} /><button type="button" className="text-button" onClick={() => update("objectives", form.objectives.filter((_, itemIndex) => itemIndex !== index))}>Remove</button></div>)}</div><Button secondary onClick={() => update("objectives", [...form.objectives, ""])}>Add objective</Button></div>
+        <div className="form-section"><h3>Strategies and event flow</h3><div className="repeat-list">{form.strategies.map((item, index) => <div className="repeat-card" key={index}><input placeholder="Strategy title" value={item.title} onChange={(event) => update("strategies", form.strategies.map((row, rowIndex) => rowIndex === index ? { ...row, title: event.target.value } : row))} /><textarea placeholder="Strategy description" value={item.description} onChange={(event) => update("strategies", form.strategies.map((row, rowIndex) => rowIndex === index ? { ...row, description: event.target.value } : row))} /><button type="button" className="text-button" onClick={() => update("strategies", form.strategies.filter((_, rowIndex) => rowIndex !== index))}>Remove strategy</button></div>)}</div><Button secondary onClick={() => update("strategies", [...form.strategies, { title: "", description: "" }])}>Add strategy</Button><p className="muted form-note">Timing is subject to change.</p><div className="repeat-list">{form.eventFlow.map((item, index) => <div className="repeat-row" key={index}><input type="time" value={item.startTime} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, startTime: event.target.value } : row))} /><input type="time" value={item.endTime} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, endTime: event.target.value } : row))} /><input placeholder="Activity" value={item.activity} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, activity: event.target.value } : row))} /><button type="button" className="text-button" onClick={() => update("eventFlow", form.eventFlow.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}</div><Button secondary onClick={() => update("eventFlow", [...form.eventFlow, { startTime: "", endTime: "", activity: "" }])}>Add flow row</Button></div>
+        <div className="form-section"><h3>Project management team</h3>{form.team.map((item, index) => <div className="repeat-grid" key={index}>{(["group", "position", "name", "studentNumber", "email"] as const).map((key) => <input key={key} placeholder={key} value={item[key]} onChange={(event) => update("team", form.team.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: event.target.value } : row))} />)}<button type="button" className="text-button" onClick={() => update("team", form.team.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<Button secondary onClick={() => update("team", [...form.team, { group: "", position: "", name: "", studentNumber: "", email: "" }])}>Add team member</Button></div>
+        <div className="form-section"><h3>List of participants</h3><p className="muted">Tentative list. Mark attendance after the event.</p>{form.participants.map((item, index) => <div className="repeat-grid participant-row" key={index}><select value={item.type} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, type: event.target.value as "Officer" | "Adviser" | "Member" } : row))}><option>Officer</option><option>Adviser</option><option>Member</option></select><input placeholder="Name" value={item.name} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, name: event.target.value } : row))} /><input placeholder="Student number" value={item.studentNumber} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, studentNumber: event.target.value } : row))} /><input placeholder="Email" value={item.email} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, email: event.target.value } : row))} /><label className="check"><input type="checkbox" checked={item.attended} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, attended: event.target.checked } : row))} /> Attended</label><button type="button" className="text-button" onClick={() => update("participants", form.participants.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<div className="form-actions inline-actions"><Button secondary onClick={() => update("participants", [...form.participants, { type: "Member", name: "", studentNumber: "", email: "", attended: false }])}>Add participant</Button><label className="button button-secondary csv-import">Import CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const imported = String(reader.result).split(/\r?\n/).slice(1).filter(Boolean).map((line) => { const [type, name, studentNumber, email] = line.split(","); return { type: (["Officer", "Adviser", "Member"].includes(type) ? type : "Member") as "Officer" | "Adviser" | "Member", name: name ?? "", studentNumber: studentNumber ?? "", email: email ?? "", attended: false }; }); update("participants", imported); }; reader.readAsText(file); }} /></label></div></div>
+        <div className="form-section"><h3>Signatures</h3><div className="form-grid"><Field label="Prepared by" type="text" value={form.preparedBy} onChange={(value) => update("preparedBy", value)} placeholder="Name" /><Field label="Noted by (Organization Adviser)" type="text" value={form.notedBy} onChange={(value) => update("notedBy", value)} placeholder="Adviser name" /></div></div>
+        <div className="form-section"><h3>Budget proposal</h3>{form.budget.map((item, index) => <div className="repeat-grid" key={index}><input placeholder="Category" value={item.category} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, category: event.target.value } : row))} /><input placeholder="Details" value={item.details} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, details: event.target.value } : row))} /><input type="number" min="0" placeholder="Qty" value={item.quantity} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: Number(event.target.value) || 0 } : row))} /><input type="number" min="0" placeholder="Unit cost" value={item.unitCost} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, unitCost: Number(event.target.value) || 0 } : row))} /><span className="muted">₱{(item.quantity * item.unitCost).toFixed(2)}</span><button type="button" className="text-button" onClick={() => update("budget", form.budget.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<Button secondary onClick={() => update("budget", [...form.budget, { category: "", details: "", quantity: 1, unitCost: 0 }])}>Add budget item</Button><Field label="Sponsored amount" type="number" value={String(form.sponsoredAmount)} onChange={(value) => update("sponsoredAmount", Number(value) || 0)} placeholder="0" /><p className="muted">Total ₱{total.toFixed(2)} · Net cost ₱{Math.max(0, total - form.sponsoredAmount).toFixed(2)}</p></div>
+        {message && <div className={`notice ${message.includes("Unable") || message.includes("required") ? "error" : "success"}`}>{message}</div>}<div className="form-actions"><Button secondary onClick={() => printEventProposal(form, organization.name)}>Export proposal PDF</Button><Button secondary onClick={() => void save(false)} disabled={saving}>Save draft</Button><Button type="submit" disabled={saving}>{saving ? "Saving..." : "Submit proposal"}</Button></div>
+      </form>
+      <aside className="form-aside"><span className="eyebrow">MY PROPOSALS</span>{proposals.length === 0 ? <p className="muted">No saved proposals yet.</p> : proposals.map((proposal) => <button className="proposal-summary" key={proposal.proposal_id} onClick={() => { setProposalId(proposal.proposal_id); setStatus(proposal.status); setForm({ ...emptyProposal(organization.name, user?.name ?? ""), ...proposal.form_data }); }}><b>{proposal.form_data.eventTitle || "Untitled proposal"}</b><span>{proposal.status}</span></button>)}<p className="muted">Current status: {status}</p></aside>
+    </div>
+  </>;
+}
+
 function StudentView({
   user,
   page,
@@ -1264,6 +1389,9 @@ function StudentView({
       .catch(() => setDateFacilities(availableFacilities));
   }, [availabilityDate, availableFacilities]);
   if (page === "profile") return <Profile role="organization" user={user} />;
+  if (page === "proposals" && currentOrganization) {
+    return <EventProposalPage user={user} organization={currentOrganization} />;
+  }
   if (showForm && !currentOrganization)
     return (
       <>

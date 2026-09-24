@@ -126,6 +126,153 @@ const validActivityForm = (formData: Record<string, unknown>) => {
   );
 };
 
+const validProposalForm = (formData: Record<string, unknown>, submitting: boolean) => {
+  const objectives = formData.objectives;
+  const date = String(formData.eventDate ?? "");
+  const startTime = String(formData.startTime ?? "");
+  const endTime = String(formData.endTime ?? "");
+  const dateValue = new Date(`${date}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Boolean(
+    formData.school && formData.academicYear && formData.eventTitle &&
+      date && startTime && endTime && formData.venue && formData.mode &&
+      formData.description && Array.isArray(objectives) && objectives.length > 0 &&
+      Number(formData.expectedCount) > 0 &&
+      /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTime) &&
+      /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(endTime) &&
+      startTime < endTime && (!submitting || dateValue >= today)
+  );
+};
+
+app.get("/api/event-proposals", async (request, response) => {
+  const userId = Number(request.query.userId);
+  const orgId = Number(request.query.orgId);
+  if (!Number.isInteger(userId) || !Number.isInteger(orgId)) {
+    response.status(400).json({ error: "A valid user and organization are required" });
+    return;
+  }
+  try {
+    const proposals = await sql`
+      select proposal_id, activity_id, org_id, created_by_user_id, form_data,
+        status, rejection_reason, created_at, updated_at, submitted_at
+      from event_proposal
+      where org_id = ${orgId}
+      order by updated_at desc
+    `;
+    response.json(proposals);
+  } catch {
+    response.status(500).json({ error: "Unable to load event proposals" });
+  }
+});
+
+app.post("/api/event-proposals", async (request, response) => {
+  const { proposalId, activityId, orgId, userId, formData, submit = false } = request.body ?? {};
+  if (!Number.isInteger(Number(orgId)) || !Number.isInteger(Number(userId))
+    || !formData || typeof formData !== "object" || Array.isArray(formData)) {
+    response.status(400).json({ error: "Invalid event proposal" });
+    return;
+  }
+  if (submit && !validProposalForm(formData as Record<string, unknown>, true)) {
+    response.status(400).json({ error: "Complete the required proposal fields" });
+    return;
+  }
+  try {
+    const [membership] = await sql`
+      select 1 from user_organization
+      where user_id = ${Number(userId)} and org_id = ${Number(orgId)} and status = 'Active'
+    `;
+    if (!membership) {
+      response.status(403).json({ error: "You are not a member of this organization" });
+      return;
+    }
+    if (proposalId) {
+      const [proposal] = await sql`
+        update event_proposal
+        set form_data = ${JSON.stringify(formData)}::jsonb,
+            updated_at = now(),
+            status = case when status = 'Rejected' then 'Draft' else status end,
+            rejection_reason = null,
+            submitted_at = case when ${Boolean(submit)} then now() else submitted_at end
+        where proposal_id = ${Number(proposalId)} and org_id = ${Number(orgId)}
+          and created_by_user_id = ${Number(userId)}
+        returning proposal_id, activity_id, status, updated_at
+      `;
+      response.status(200).json(proposal);
+      return;
+    }
+    const [activity] = await sql`
+      insert into activity (org_id, created_by_user_id)
+      values (${Number(orgId)}, ${Number(userId)})
+      returning activity_id
+    `;
+    const [proposal] = await sql`
+      insert into event_proposal
+        (activity_id, org_id, created_by_user_id, form_data, status, submitted_at)
+      values (
+        ${activity.activity_id}, ${Number(orgId)}, ${Number(userId)},
+        ${JSON.stringify(formData)}::jsonb, ${submit ? "Submitted" : "Draft"},
+        ${submit ? sql`now()` : sql`null`}
+      )
+      returning proposal_id, activity_id, status, updated_at
+    `;
+    response.status(201).json(proposal);
+  } catch {
+    response.status(409).json({ error: "Unable to save event proposal" });
+  }
+});
+
+app.patch("/api/event-proposals/:id/status", async (request, response) => {
+  const proposalId = Number(request.params.id);
+  const { userId, status, remarks } = request.body ?? {};
+  if (!Number.isInteger(proposalId) || !Number.isInteger(Number(userId))
+    || !["Adviser Noted", "Approved", "Rejected"].includes(String(status))) {
+    response.status(400).json({ error: "Invalid proposal status update" });
+    return;
+  }
+  try {
+    const [proposal] = await sql`
+      select p.status, p.org_id, o.faculty_adviser_id, u.role
+      from event_proposal p
+      join student_organization o on o.org_id = p.org_id
+      join app_user u on u.user_id = ${Number(userId)}
+      where p.proposal_id = ${proposalId}
+    `;
+    const isAdviser = proposal?.role === "faculty" && proposal.faculty_adviser_id === Number(userId)
+      && proposal.status === "Submitted" && ["Adviser Noted", "Rejected"].includes(String(status));
+    const isFinal = proposal?.role === "admin" && proposal.status === "Adviser Noted"
+      && ["Approved", "Rejected"].includes(String(status));
+    if (!proposal || (!isAdviser && !isFinal)) {
+      response.status(403).json({ error: "You are not authorized for this proposal stage" });
+      return;
+    }
+    const stage = isAdviser ? "Adviser" : "Final";
+    await sql`
+      update event_proposal
+      set status = ${String(status)},
+          rejection_reason = ${status === "Rejected" ? remarks ?? "No reason provided" : null},
+          updated_at = now()
+      where proposal_id = ${proposalId}
+    `;
+    await sql`
+      insert into event_proposal_approval
+        (proposal_id, approved_user_id, approval_stage, status, remarks)
+      values (${proposalId}, ${Number(userId)}, ${stage},
+        ${status === "Rejected" ? "Rejected" : stage === "Adviser" ? "Noted" : "Approved"},
+        ${remarks ?? null})
+      on conflict (proposal_id, approval_stage) do update set
+        approved_user_id = excluded.approved_user_id,
+        status = excluded.status,
+        date_actioned = now(),
+        remarks = excluded.remarks
+    `;
+    response.json({ updated: true });
+  } catch {
+    response.status(500).json({ error: "Unable to update proposal status" });
+  }
+});
+
 app.get("/api/activity-applications", async (request, response) => {
   const userId = Number(request.query.userId);
   const orgId = Number(request.query.orgId);

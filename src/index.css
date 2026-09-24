@@ -1192,6 +1192,54 @@ td small {
   justify-content: flex-start;
   padding-top: 18px;
 }
+.repeat-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.repeat-row,
+.repeat-grid,
+.repeat-card {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.repeat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  margin: 10px 0;
+}
+.repeat-card {
+  align-items: stretch;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  padding: 10px;
+}
+.repeat-row input,
+.repeat-grid input,
+.repeat-card input,
+.repeat-card textarea {
+  min-width: 0;
+  border: 1px solid #d8d8d3;
+  padding: 9px 10px;
+}
+.proposal-summary {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 12px 0;
+}
+.proposal-summary span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.csv-import input {
+  display: none;
+}
 .upload {
   border: 1px dashed #c7c7c1;
   padding: 25px;
