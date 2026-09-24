@@ -109,6 +109,85 @@ app.get("/api/health", async (_request, response) => {
   }
 });
 
+const validActivityForm = (formData: Record<string, unknown>) => {
+  const missionAlignment = formData.missionAlignment;
+  return Boolean(
+    formData.category &&
+      formData.size &&
+      formData.applicantName &&
+      formData.studentNumber &&
+      formData.programYear &&
+      formData.position &&
+      formData.organizationCourseSection &&
+      formData.nature &&
+      formData.objectives &&
+      Array.isArray(missionAlignment) &&
+      missionAlignment.length > 0,
+  );
+};
+
+app.get("/api/activity-applications", async (request, response) => {
+  const userId = Number(request.query.userId);
+  const orgId = Number(request.query.orgId);
+  if (!Number.isInteger(userId) || !Number.isInteger(orgId)) {
+    response.status(400).json({ error: "A valid user and organization are required" });
+    return;
+  }
+  try {
+    const [application] = await sql`
+      select application_id, booking_id, org_id, applicant_user_id, form_data,
+        status, rejection_reason, created_at, updated_at, submitted_at
+      from activity_application
+      where org_id = ${orgId} and applicant_user_id = ${userId}
+      order by updated_at desc
+      limit 1
+    `;
+    response.json(application ?? null);
+  } catch {
+    response.status(500).json({ error: "Unable to load the activity application" });
+  }
+});
+
+app.post("/api/activity-applications", async (request, response) => {
+  const { applicationId, orgId, applicantUserId, formData } = request.body ?? {};
+  if (!Number.isInteger(Number(orgId)) || !Number.isInteger(Number(applicantUserId))
+    || !formData || typeof formData !== "object" || Array.isArray(formData)) {
+    response.status(400).json({ error: "Invalid activity application" });
+    return;
+  }
+  try {
+    const [membership] = await sql`
+      select 1 from user_organization
+      where user_id = ${Number(applicantUserId)} and org_id = ${Number(orgId)}
+        and status = 'Active'
+    `;
+    if (!membership) {
+      response.status(403).json({ error: "You are not a member of this organization" });
+      return;
+    }
+    const [application] = applicationId
+      ? await sql`
+          update activity_application
+          set form_data = ${JSON.stringify(formData)}::jsonb,
+              updated_at = now(),
+              status = case when status = 'Rejected' then 'Draft' else status end,
+              rejection_reason = null
+          where application_id = ${Number(applicationId)}
+            and org_id = ${Number(orgId)}
+            and applicant_user_id = ${Number(applicantUserId)}
+          returning application_id, status, updated_at
+        `
+      : await sql`
+          insert into activity_application (org_id, applicant_user_id, form_data)
+          values (${Number(orgId)}, ${Number(applicantUserId)}, ${JSON.stringify(formData)}::jsonb)
+          returning application_id, status, updated_at
+        `;
+    response.status(201).json(application);
+  } catch {
+    response.status(409).json({ error: "Unable to save the activity application" });
+  }
+});
+
 app.post(["/api/auth", "/api/login"], async (request, response) => {
   const { email, password } = request.body ?? {};
   if (!email || !password) {
@@ -468,6 +547,7 @@ app.post("/api/bookings", async (request, response) => {
     startTime,
     endTime,
     purpose,
+    activityApplication,
     clientRequestId,
     attachment,
     equipment = [],
@@ -477,6 +557,21 @@ app.post("/api/bookings", async (request, response) => {
     response.status(400).json({ error: "Booking request ID is required" });
     return;
   }
+      if (activityApplication) {
+        if (typeof activityApplication !== "object" || Array.isArray(activityApplication)
+          || !validActivityForm(activityApplication as Record<string, unknown>)) {
+          response.status(400).json({ error: "Complete the required Form 1 fields" });
+          return;
+        }
+        const minimumDate = new Date();
+        minimumDate.setHours(0, 0, 0, 0);
+        minimumDate.setDate(minimumDate.getDate() + 7);
+        const activityDate = new Date(`${eventDate}T00:00:00`);
+        if (Number.isNaN(activityDate.getTime()) || activityDate < minimumDate) {
+          response.status(400).json({ error: "Form 1 must be submitted at least 7 days before the activity" });
+          return;
+        }
+      }
   if (!Number.isInteger(Number(orgId)) || !Number.isInteger(Number(roomId))
     || !Number.isInteger(Number(participantCount)) || Number(participantCount) < 1
     || !/^\d{4}-\d{2}-\d{2}$/.test(String(eventDate))
@@ -640,6 +735,16 @@ app.post("/api/bookings", async (request, response) => {
         values (${booking.booking_id}, ${attachment.name}, ${attachment.data}, ${attachment.type ?? "application/octet-stream"})
       `;
     }
+      if (activityApplication) {
+        await sql`
+          insert into activity_application
+            (booking_id, org_id, applicant_user_id, form_data, status, submitted_at)
+          values (
+            ${booking.booking_id}, ${orgId}, ${resolvedRequesterId},
+            ${JSON.stringify(activityApplication)}::jsonb, 'Submitted', now()
+          )
+        `;
+      }
     for (const item of equipment) {
       const request = typeof item === "string"
         ? (() => {

@@ -117,6 +117,63 @@ type Booking = {
   requestKey?: string;
   attachment?: { name: string; type: string; data: string };
   documents?: { name: string; type: string; data: string }[];
+  activityApplication?: ActivityApplicationData;
+};
+
+type ActivityApplicationData = {
+  eventTitle?: string;
+  activityDate?: string;
+  venue?: string;
+  startTime?: string;
+  endTime?: string;
+  purpose?: string;
+  people?: number;
+  category: string;
+  size: string;
+  memberCount: number;
+  applicantName: string;
+  studentNumber: string;
+  programYear: string;
+  submissionDate: string;
+  position: string;
+  organizationCourseSection: string;
+  nature: string;
+  objectives: string;
+  individualContribution: string;
+  missionAlignment: string[];
+  coreValuesExplanation: string;
+  peoPo: string;
+};
+
+const printActivityApplication = (data: ActivityApplicationData, shared: {
+  organization: string;
+  event: string;
+  date: string;
+  venue: string;
+  people: number;
+  startTime: string;
+  endTime: string;
+  purpose: string;
+}) => {
+  const popup = window.open("", "_blank", "width=900,height=1100");
+  if (!popup) return;
+  const escaped = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  popup.document.write(`<!doctype html><html><head><title>FM-SA-14-01</title><style>
+    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}h1{font-size:18px;text-align:center;margin:0}h2{font-size:14px;border-bottom:1px solid #111;padding-bottom:4px;margin:20px 0 8px}.meta{text-align:center;margin:4px}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:7px;border:1px solid #bbb;min-height:24px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}.checks{margin:10px 0}.signature{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px}.line{border-top:1px solid #111;padding-top:5px}@media print{body{margin:15mm}}
+  </style></head><body><h1>MAPUA UNIVERSITY</h1><div class="meta">STUDENT ACTIVITY APPLICATION FORM</div><div class="meta"><b>FM-SA-14-01</b> | Effective March 1, 2024</div>
+  <h2>Applicant and activity information</h2><div class="grid">
+  <div class="cell"><span class="label">Organization</span>${escaped(shared.organization)}</div><div class="cell"><span class="label">Submission date</span>${escaped(data.submissionDate)}</div>
+  <div class="cell"><span class="label">Applicant</span>${escaped(data.applicantName)} (${escaped(data.studentNumber)})</div><div class="cell"><span class="label">Program and year</span>${escaped(data.programYear)}</div>
+  <div class="cell"><span class="label">Position</span>${escaped(data.position)}</div><div class="cell"><span class="label">Organization/course and section</span>${escaped(data.organizationCourseSection)}</div>
+  <div class="cell"><span class="label">Category / size</span>${escaped(data.category)} / ${escaped(data.size)}</div><div class="cell"><span class="label">Class or organization members</span>${data.memberCount}</div>
+  <div class="cell"><span class="label">Activity title</span>${escaped(shared.event)}</div><div class="cell"><span class="label">Nature</span>${escaped(data.nature)}</div>
+  <div class="cell"><span class="label">Venue / date / time</span>${escaped(shared.venue)} / ${escaped(shared.date)} / ${escaped(shared.startTime)} - ${escaped(shared.endTime)}</div><div class="cell"><span class="label">Expected participants</span>${shared.people}</div>
+  <div class="cell wide"><span class="label">Objectives</span>${escaped(data.objectives)}</div><div class="cell wide"><span class="label">Purpose</span>${escaped(shared.purpose)}</div>
+  <div class="cell"><span class="label">Individual contribution</span>${escaped(data.individualContribution || "N/A")}</div><div class="cell"><span class="label">Proposed budget</span>To be completed from Budget Proposal</div></div>
+  <h2>Mission alignment</h2><div class="checks">${data.missionAlignment.map((item) => `☑ ${escaped(item)}`).join(" &nbsp; ")}</div><div class="cell"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell"><span class="label">PEO/PO</span>${escaped(data.peoPo || "Optional")}</div>
+  <h2>Signatures and approvals</h2><div class="signature"><div class="line">Class Officer<br>Signature / date</div><div class="line">Faculty Adviser<br>Signature / date</div><div class="line">Dean / Subject Chair<br>Signature / date</div><div class="line">Asst. VP OSAAR<br>Signature / date</div></div>
+  <p><b>Submission rule:</b> Submit at least 7 days before the activity. Post-activity documents are due within 3 days after.</p><script>window.onload=()=>window.print();</script></body></html>`);
+  popup.document.close();
 };
 
 function mapBooking(row: Record<string, any>): Booking {
@@ -1243,6 +1300,7 @@ function StudentView({
                 requestedByUserId: user?.userId,
                 clientRequestId: b.requestKey,
                 attachment: b.attachment,
+                activityApplication: b.activityApplication,
                 equipment: b.equipment,
               eventName: b.event,
               participantCount: b.people,
@@ -1495,12 +1553,60 @@ function BookingForm({
   const [purpose, setPurpose] = useState("");
   const [error, setError] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [applicationId, setApplicationId] = useState<number | null>(null);
+  const [category, setCategory] = useState("Co-Curricular");
+  const [activitySize, setActivitySize] = useState("Minor");
+  const [memberCount, setMemberCount] = useState("0");
+  const [applicantName, setApplicantName] = useState(user?.name ?? "");
+  const [studentNumber, setStudentNumber] = useState("");
+  const [programYear, setProgramYear] = useState("");
+  const [position, setPosition] = useState("");
+  const [organizationCourseSection, setOrganizationCourseSection] = useState("");
+  const [nature, setNature] = useState("");
+  const [objectives, setObjectives] = useState("");
+  const [individualContribution, setIndividualContribution] = useState("N/A");
+  const [missionAlignment, setMissionAlignment] = useState<string[]>([]);
+  const [coreValuesExplanation, setCoreValuesExplanation] = useState("");
+  const [peoPo, setPeoPo] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [equipmentRequests, setEquipmentRequests] = useState<Record<string, number>>({});
   const [dateFacilities, setDateFacilities] = useState(availableFacilities);
   const [dateEquipment, setDateEquipment] = useState(availableEquipment);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityVersion, setAvailabilityVersion] = useState(0);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    fetch(`${apiBase}/api/activity-applications?userId=${user.userId}&orgId=${organization.id}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((application: { application_id?: number; status?: string; form_data?: ActivityApplicationData } | null) => {
+        if (!application?.form_data || application.status !== "Draft") return;
+        const saved = application.form_data;
+        setApplicationId(application.application_id ?? null);
+        setEvent(saved.eventTitle ?? "");
+        setDate(saved.activityDate ?? "");
+        setVenue(saved.venue ?? venue);
+        setStartTime(saved.startTime ?? "09:00");
+        setEndTime(saved.endTime ?? "16:00");
+        setPurpose(saved.purpose ?? "");
+        setPeople(String(saved.people ?? 50));
+        setCategory(saved.category ?? "Co-Curricular");
+        setActivitySize(saved.size ?? "Minor");
+        setMemberCount(String(saved.memberCount ?? 0));
+        setApplicantName(saved.applicantName ?? user.name);
+        setStudentNumber(saved.studentNumber ?? "");
+        setProgramYear(saved.programYear ?? "");
+        setPosition(saved.position ?? "");
+        setOrganizationCourseSection(saved.organizationCourseSection ?? "");
+        setNature(saved.nature ?? "");
+        setObjectives(saved.objectives ?? "");
+        setIndividualContribution(saved.individualContribution ?? "N/A");
+        setMissionAlignment(saved.missionAlignment ?? []);
+        setCoreValuesExplanation(saved.coreValuesExplanation ?? "");
+        setPeoPo(saved.peoPo ?? "");
+      })
+      .catch(() => undefined);
+  }, [organization.id, user]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setAvailabilityVersion((version) => version + 1), 5000);
@@ -1560,6 +1666,53 @@ function BookingForm({
       setVenue(dateFacilities.find((item) => item.status === "Available")?.name ?? "");
     }
   }, [dateFacilities, venue]);
+  const activityFormData = (): ActivityApplicationData => ({
+    eventTitle: event,
+    activityDate: date,
+    venue,
+    startTime,
+    endTime,
+    purpose,
+    people: Number(people) || 0,
+    category,
+    size: activitySize,
+    memberCount: Number(memberCount) || 0,
+    applicantName,
+    studentNumber,
+    programYear,
+    submissionDate: localDateValue(),
+    position,
+    organizationCourseSection,
+    nature,
+    objectives,
+    individualContribution,
+    missionAlignment,
+    coreValuesExplanation,
+    peoPo,
+  });
+  const saveDraft = async () => {
+    setSubmitting(true);
+    try {
+      const response = await fetch(`${apiBase}/api/activity-applications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicationId,
+          orgId: organization.id,
+          applicantUserId: user?.userId,
+          formData: activityFormData(),
+        }),
+      });
+      const result = await response.json().catch(() => null) as { application_id?: number; error?: string } | null;
+      if (!response.ok) throw new Error(result?.error ?? "Unable to save draft");
+      if (result?.application_id) setApplicationId(result.application_id);
+      setError("Draft saved.");
+    } catch (draftError) {
+      setError(draftError instanceof Error ? draftError.message : "Unable to save draft");
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <>
       <Header
@@ -1572,8 +1725,13 @@ function BookingForm({
           className="panel form-panel"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (!event || !date || !purpose || !venue) {
-              setError("Event name, date, venue, and purpose are required.");
+            if (!event || !date || !purpose || !venue || !applicantName || !studentNumber
+              || !programYear || !position || !organizationCourseSection || !nature || !objectives) {
+              setError("Complete the required Form 1 fields before submitting.");
+              return;
+            }
+            if (missionAlignment.length === 0) {
+              setError("Select at least one mission alignment statement.");
               return;
             }
             if (startTime >= endTime) {
@@ -1583,6 +1741,14 @@ function BookingForm({
             if (submitting) return;
             setSubmitting(true);
             const requestKey = crypto.randomUUID();
+            const minimumDate = new Date();
+            minimumDate.setHours(0, 0, 0, 0);
+            minimumDate.setDate(minimumDate.getDate() + 7);
+            if (new Date(`${date}T00:00:00`) < minimumDate) {
+              setError("The activity must be scheduled at least 7 days from today.");
+              setSubmitting(false);
+              return;
+            }
             const selectedAttachment = attachment;
             const attachmentData = selectedAttachment
               ? await new Promise<string>((resolve, reject) => {
@@ -1619,6 +1785,7 @@ function BookingForm({
                   quantity,
                 })),
               purpose,
+              activityApplication: activityFormData(),
               requestedByUserId: user?.userId ?? 0,
               roomId: dateFacilities.find((f) => f.name === venue)?.roomId ?? 0,
               eventDate: date,
@@ -1698,6 +1865,46 @@ function BookingForm({
                   <small className="error-text">No venue is available on this date.</small>
                 )}
               </div>
+            </div>
+          </div>
+          <div className="form-section">
+            <h3>Student Activity Application · FM-SA-14-01</h3>
+            <div className="form-grid">
+              <div className="field">
+                <label>Category</label>
+                <div className="choice-row">
+                  {['Co-Curricular', 'Extra-Curricular'].map((value) => (
+                    <label key={value}><input type="radio" checked={category === value} onChange={() => setCategory(value)} /> {value}</label>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <label>Activity size</label>
+                <div className="choice-row">
+                  {['Major', 'Minor'].map((value) => (
+                    <label key={value}><input type="radio" checked={activitySize === value} onChange={() => setActivitySize(value)} /> {value}</label>
+                  ))}
+                </div>
+              </div>
+              <Field label="Total class/org members" type="number" value={memberCount} onChange={setMemberCount} placeholder="0" />
+              <Field label="Applicant name" type="text" value={applicantName} onChange={setApplicantName} placeholder="Full name" />
+              <Field label="Student number" type="text" value={studentNumber} onChange={setStudentNumber} placeholder="20XXXXXXX" />
+              <Field label="Program and year" type="text" value={programYear} onChange={setProgramYear} placeholder="BSCS 3" />
+              <Field label="Position" type="text" value={position} onChange={setPosition} placeholder="Class Officer" />
+              <Field label="Organization/course and section" type="text" value={organizationCourseSection} onChange={setOrganizationCourseSection} placeholder="Organization or course-section" />
+              <Field label="Nature of activity" type="text" value={nature} onChange={setNature} placeholder="Meeting, seminar, outreach..." />
+              <Field label="Individual contribution" type="text" value={individualContribution} onChange={setIndividualContribution} placeholder="Amount or N/A" />
+              <div className="field full"><label>Objectives</label><textarea value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={4} placeholder="State the objectives of the activity" /></div>
+              <div className="field full"><label>Mission alignment <small>(select at least one)</small></label><div className="choice-grid">
+                {['Academic excellence', 'Community engagement', 'Student development'].map((value) => <label key={value}><input type="checkbox" checked={missionAlignment.includes(value)} onChange={(e) => setMissionAlignment(e.target.checked ? [...missionAlignment, value] : missionAlignment.filter((item) => item !== value))} /> {value}</label>)}
+              </div></div>
+              <div className="field full"><label>Mapúa Core Values explanation</label><textarea value={coreValuesExplanation} onChange={(e) => setCoreValuesExplanation(e.target.value)} rows={3} placeholder="Discipline, Excellence, Commitment, Integrity, Relevance" /></div>
+              <div className="field full"><label>PEO/PO <small>(optional)</small></label><textarea value={peoPo} onChange={(e) => setPeoPo(e.target.value)} rows={2} /></div>
+            </div>
+            <p className="muted form-note">Day is calculated from the event date. Proposed budget will be supplied by the Budget Proposal form. Submit at least 7 days before the activity; post-activity documents are due within 3 days after.</p>
+            <div className="form-actions inline-actions">
+              <Button secondary onClick={() => printActivityApplication(activityFormData(), { organization: organization.name, event, date, venue, people: Number(people), startTime, endTime, purpose })}>Export Form 1 PDF</Button>
+              <Button secondary onClick={saveDraft} disabled={submitting}>Save draft</Button>
             </div>
           </div>
           <div className="form-section">

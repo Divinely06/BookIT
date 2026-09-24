@@ -1169,6 +1169,29 @@ td small {
 .time-row input {
   min-width: 0;
 }
+.choice-row,
+.choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.choice-row input,
+.choice-grid input {
+  accent-color: var(--red);
+}
+.form-note {
+  margin: 18px 0 0;
+}
+.inline-actions {
+  justify-content: flex-start;
+  padding-top: 18px;
+}
 .upload {
   border: 1px dashed #c7c7c1;
   padding: 25px;
