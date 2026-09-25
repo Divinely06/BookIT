@@ -3338,41 +3338,68 @@ function Review({
     eventFlow: [],
     projectManagement: [],
   };
+  const summarizedBudget = application.budgetProposal?.length
+    ? application.budgetProposal.map((item) => `${item.category || "Item"}: ${item.details || "No details"} (${item.quantity} × ₱${Number(item.unitCost || 0).toFixed(2)})`).join("; ")
+    : "No budget proposal added.";
+  const summarizedFlow = application.eventFlow?.length
+    ? application.eventFlow.map((item) => `${item.startTime}–${item.endTime}: ${item.activity || "No activity listed"}`).join("; ")
+    : "No event flow added.";
+  const summarizedTeam = application.projectManagement?.length
+    ? application.projectManagement.map((item) => `${item.name || "Unnamed"} — ${item.position || "Position not listed"} (${item.group || "Group not listed"})`).join("; ")
+    : "No project management team added.";
   const fullFormSections = [
     {
       title: "Applicant & activity info",
       fields: [
-        application.applicantName && ["Applicant", `${application.applicantName}${application.studentNumber ? ` (${application.studentNumber})` : ""}`],
-        application.programYear && ["Program / year", application.programYear],
-        application.position && ["Position", application.position],
-        application.category && ["Category", application.category],
-        application.size && ["Activity size", application.size],
-        application.memberCount !== undefined && ["Member count", String(application.memberCount)],
-        application.nature && ["Nature", application.nature],
-      ].filter(Boolean) as Array<[string, string]>,
+        ["Organization", booking.org],
+        ["School", application.school || "—"],
+        ["Academic year", application.academicYear || "—"],
+        ["Applicant", `${application.applicantName || "—"}${application.studentNumber ? ` (${application.studentNumber})` : ""}`],
+        ["Program / year", application.programYear || "—"],
+        ["Position", application.position || "—"],
+        ["Category", application.category || "—"],
+        ["Activity size", application.size || "—"],
+        ["Total class / org members", String(application.memberCount ?? "—")],
+        ["Nature of activity", application.nature || "—"],
+        ["Tagline", application.tagline || "—"],
+      ] as Array<[string, string]>,
     },
     {
       title: "Event details",
       fields: [
-        application.school && ["School", application.school],
-        application.academicYear && ["Academic year", application.academicYear],
-        application.venue && ["Venue", application.venue],
-        application.activityDate && ["Date", application.activityDate],
-        application.startTime && application.endTime && ["Time", `${application.startTime} - ${application.endTime}`],
-        application.mode && ["Mode", application.mode],
-        application.targetParticipants && ["Target participants", application.targetParticipants],
-        application.sdgAlignment && ["SDG alignment", application.sdgAlignment],
-      ].filter(Boolean) as Array<[string, string]>,
+        ["Event title", application.eventTitle || booking.event],
+        ["Venue", application.venue || booking.venue],
+        ["Date", application.activityDate || booking.eventDate || booking.date],
+        ["Time", application.startTime && application.endTime ? `${application.startTime} - ${application.endTime}` : booking.time],
+        ["Mode", application.mode || "—"],
+        ["Target participants", application.targetParticipants || "—"],
+        ["Expected participants", String(application.people ?? booking.people)],
+        ["SDG alignment", application.sdgAlignment || "—"],
+        ["Submission date", application.submissionDate || "—"],
+      ] as Array<[string, string]>,
     },
     {
       title: "Purpose & alignment",
       fields: [
-        application.purpose && ["Purpose", application.purpose],
-        application.objectives && ["Objectives", application.objectives],
-        application.missionAlignment?.length && ["Mission alignment", application.missionAlignment.join(" • ")],
-        application.coreValuesExplanation && ["Core values", application.coreValuesExplanation],
-        application.peoPo && ["PEO / PO", application.peoPo],
-      ].filter(Boolean) as Array<[string, string]>,
+        ["Purpose", application.purpose || booking.purpose],
+        ["Objectives", application.objectives || "—"],
+        ["Individual contribution", application.individualContribution || "—"],
+        ["Mission alignment", application.missionAlignment?.length ? application.missionAlignment.join(" • ") : "—"],
+        ["Core values explanation", application.coreValuesExplanation || "—"],
+        ["PEO / PO", application.peoPo || "—"],
+      ] as Array<[string, string]>,
+    },
+    {
+      title: "Budget proposal",
+      fields: [["Budget proposal", summarizedBudget]] as Array<[string, string]>,
+    },
+    {
+      title: "Event flow",
+      fields: [["Event flow", summarizedFlow]] as Array<[string, string]>,
+    },
+    {
+      title: "Project management",
+      fields: [["Project management", summarizedTeam]] as Array<[string, string]>,
     },
   ];
   return (
