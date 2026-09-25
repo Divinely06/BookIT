@@ -286,25 +286,29 @@ function mapBooking(row: Record<string, any>): Booking {
         year: "numeric",
       })
     : "Date unavailable";
+  const activityApplication = row.activity_application && typeof row.activity_application === "object"
+    ? row.activity_application as ActivityApplicationData
+    : undefined;
   return {
     id: String(row.booking_id),
-    event: String(row.event_name),
+    event: String(activityApplication?.eventTitle ?? row.event_name ?? ""),
     orgId: Number(row.org_id),
     org: String(row.org_name),
-    venue: String(row.room_name),
+    venue: String(activityApplication?.venue ?? row.room_name ?? ""),
     date: displayDate,
     time: `${String(row.start_time).slice(0, 5)} – ${String(row.end_time).slice(0, 5)}`,
-    people: Number(row.participant_count),
+    people: Number(activityApplication?.people ?? row.participant_count ?? 0),
     status: String(row.status) as Status,
     equipment: Array.isArray(row.equipment)
       ? row.equipment.map((item: any) => String(item))
       : [],
-    purpose: String(row.purpose),
+    purpose: String(activityApplication?.purpose ?? row.purpose ?? ""),
     rejectionReason: row.rejection_reason ? String(row.rejection_reason) : undefined,
     requestedByUserId: Number(row.requested_by_user_id),
     roomId: Number(row.room_id),
     eventDate,
     documents: Array.isArray(row.documents) ? row.documents as Booking["documents"] : [],
+    activityApplication,
   };
 }
 
@@ -3285,6 +3289,58 @@ function Review({
         : role === "cdmo"
           ? "Send to final Admin"
           : "Confirm final booking";
+  const extraDetails = booking.activityApplication ? [
+    booking.activityApplication.school && ["School", booking.activityApplication.school],
+    booking.activityApplication.academicYear && ["Academic year", booking.activityApplication.academicYear],
+    booking.activityApplication.category && ["Category", booking.activityApplication.category],
+    booking.activityApplication.size && ["Activity size", booking.activityApplication.size],
+    booking.activityApplication.applicantName && ["Applicant", `${booking.activityApplication.applicantName}${booking.activityApplication.studentNumber ? ` (${booking.activityApplication.studentNumber})` : ""}`],
+    booking.activityApplication.programYear && ["Program / year", booking.activityApplication.programYear],
+    booking.activityApplication.position && ["Position", booking.activityApplication.position],
+    booking.activityApplication.nature && ["Nature", booking.activityApplication.nature],
+    booking.activityApplication.targetParticipants && ["Target participants", booking.activityApplication.targetParticipants],
+    booking.activityApplication.sdgAlignment && ["SDG alignment", booking.activityApplication.sdgAlignment],
+    booking.activityApplication.missionAlignment?.length && ["Mission alignment", booking.activityApplication.missionAlignment.join(" • ")],
+    booking.activityApplication.coreValuesExplanation && ["Core values", booking.activityApplication.coreValuesExplanation],
+    booking.activityApplication.peoPo && ["PEO / PO", booking.activityApplication.peoPo],
+  ].filter(Boolean) as Array<[string, string]> : [];
+  const fullFormSections = booking.activityApplication ? [
+    {
+      title: "Applicant & activity info",
+      fields: [
+        booking.activityApplication.applicantName && ["Applicant", `${booking.activityApplication.applicantName}${booking.activityApplication.studentNumber ? ` (${booking.activityApplication.studentNumber})` : ""}`],
+        booking.activityApplication.programYear && ["Program / year", booking.activityApplication.programYear],
+        booking.activityApplication.position && ["Position", booking.activityApplication.position],
+        booking.activityApplication.category && ["Category", booking.activityApplication.category],
+        booking.activityApplication.size && ["Activity size", booking.activityApplication.size],
+        booking.activityApplication.memberCount !== undefined && ["Member count", String(booking.activityApplication.memberCount)],
+        booking.activityApplication.nature && ["Nature", booking.activityApplication.nature],
+      ].filter(Boolean) as Array<[string, string]>,
+    },
+    {
+      title: "Event details",
+      fields: [
+        booking.activityApplication.school && ["School", booking.activityApplication.school],
+        booking.activityApplication.academicYear && ["Academic year", booking.activityApplication.academicYear],
+        booking.activityApplication.venue && ["Venue", booking.activityApplication.venue],
+        booking.activityApplication.activityDate && ["Date", booking.activityApplication.activityDate],
+        booking.activityApplication.startTime && booking.activityApplication.endTime && ["Time", `${booking.activityApplication.startTime} - ${booking.activityApplication.endTime}`],
+        booking.activityApplication.mode && ["Mode", booking.activityApplication.mode],
+        booking.activityApplication.targetParticipants && ["Target participants", booking.activityApplication.targetParticipants],
+        booking.activityApplication.sdgAlignment && ["SDG alignment", booking.activityApplication.sdgAlignment],
+      ].filter(Boolean) as Array<[string, string]>,
+    },
+    {
+      title: "Purpose & alignment",
+      fields: [
+        booking.activityApplication.purpose && ["Purpose", booking.activityApplication.purpose],
+        booking.activityApplication.objectives && ["Objectives", booking.activityApplication.objectives],
+        booking.activityApplication.missionAlignment?.length && ["Mission alignment", booking.activityApplication.missionAlignment.join(" • ")],
+        booking.activityApplication.coreValuesExplanation && ["Core values", booking.activityApplication.coreValuesExplanation],
+        booking.activityApplication.peoPo && ["PEO / PO", booking.activityApplication.peoPo],
+      ].filter(Boolean) as Array<[string, string]>,
+    },
+  ] : [];
   return (
     <div className="modal-backdrop">
       <div className="modal">
@@ -3342,6 +3398,23 @@ function Review({
             </div>
           ))}
         </div>
+        {fullFormSections.length > 0 && (
+          <>
+            {fullFormSections.map((section) => (
+              <div key={section.title} style={{ marginTop: "1.25rem" }}>
+                <h3 style={{ margin: "0 0 0.75rem", fontSize: "0.82rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#4b5563" }}>{section.title}</h3>
+                <div className="review-grid">
+                  {section.fields.map(([label, value]) => (
+                    <div key={`${section.title}-${label}`}>
+                      <span>{label}</span>
+                      <b>{value}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
         {booking.status === "Approved" && (
           <div className="form-actions">
             <Button secondary onClick={() => printApprovedBooking(booking)}>Export approved PDF</Button>

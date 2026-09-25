@@ -99,6 +99,13 @@ async function listBookings(response: Response) {
       to_char(b.start_time, 'HH24:MI') as start_time,
       to_char(b.end_time, 'HH24:MI') as end_time,
       b.purpose, b.rejection_reason, b.status,
+      coalesce((
+        select aa.form_data
+        from activity_application aa
+        where aa.booking_id = b.booking_id
+        order by aa.updated_at desc
+        limit 1
+      ), '{}'::jsonb) as activity_application,
       coalesce((select json_agg(concat(be.quantity_requested, ' × ', e.equipment_name) order by e.equipment_name)
         from booking_equipment be join equipment e on e.equipment_id = be.equipment_id
         where be.booking_id = b.booking_id), '[]'::json) as equipment,
