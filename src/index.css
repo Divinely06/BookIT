@@ -1523,15 +1523,18 @@ td small {
   display: grid;
   place-items: center;
   padding: 20px;
+  overflow-y: auto;
   z-index: 5;
 }
 .modal {
   max-width: 600px;
   width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  box-sizing: border-box;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: white;
-  padding: 32px;
+  padding: 32px 32px 40px;
   position: relative;
   box-shadow: 0 20px 50px #0002;
 }
@@ -1571,6 +1574,7 @@ td small {
 }
 .modal textarea {
   width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   padding: 12px;
   resize: vertical;
