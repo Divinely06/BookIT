@@ -253,8 +253,27 @@ const printActivityApplication = (data: ActivityApplicationData, shared: {
   <div class="cell wide"><span class="label">Objectives</span>${escaped(data.objectives)}</div><div class="cell wide"><span class="label">Purpose</span>${escaped(shared.purpose)}</div>
   <div class="cell"><span class="label">Individual contribution</span>${escaped(data.individualContribution)}</div><div class="cell"><span class="label">Proposed budget</span>To be completed from Budget Proposal</div></div>
   <h2>Proposal alignment</h2><div class="grid"><div class="cell"><span class="label">School / academic year</span>${escaped(data.school || "N/A")} / ${escaped(data.academicYear || "N/A")}</div><div class="cell"><span class="label">Target participants</span>${escaped(data.targetParticipants || "N/A")}</div><div class="cell wide"><span class="label">SDG alignment</span>${escaped(data.sdgAlignment || data.sdgs?.join(", ") || "N/A")}</div><div class="cell wide"><span class="label">Mission alignment</span><div class="checks">${data.missionAlignment.map((item) => `<div class="check-item"><span class="check-box">&#9745;</span><span>${escaped(item)}</span></div>`).join("")}</div></div><div class="cell wide"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell wide"><span class="label">PEO/PO</span>${escaped(data.peoPo || "")}</div></div>
-  <h2>Signatures and approvals</h2><div class="signature"><div class="line">Class Officer<br>Signature / date</div><div class="line">Faculty Adviser<br>Signature / date</div><div class="line">Dean / Subject Chair<br>Signature / date</div><div class="line">Asst. VP OSAAR<br>Signature / date</div></div>
   <p><b>Submission rule:</b> Submit at least 10 days before the activity. Post-activity documents are due within 3 days after.</p><script>window.onload=()=>window.print();</script></body></html>`);
+  popup.document.close();
+};
+
+const printApprovedBooking = (booking: Booking) => {
+  const popup = window.open("", "_blank", "width=900,height=1100");
+  if (!popup) return;
+  const escaped = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const equipment = booking.equipment.length
+    ? booking.equipment.map((item) => escaped(typeof item === "string" ? item : `${item.quantity} × equipment #${item.equipmentId}`)).join("<br>")
+    : "None";
+  popup.document.write(`<!doctype html><html><head><title>Approved Booking - ${escaped(booking.event)}</title><style>
+    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}.pdf-header{display:flex;align-items:center;gap:22px;border-bottom:2px solid #c8102e;padding-bottom:12px}.pdf-header img{width:100px;height:auto;max-height:90px;object-fit:contain}.pdf-header-copy{flex:1;text-align:center}.pdf-header-copy h1{font-size:19px;margin:0}.meta{text-align:center;margin:4px}.approved{margin:20px 0;padding:12px;border:2px solid #39805a;color:#276b49;text-align:center;font-size:18px;font-weight:bold;letter-spacing:.08em}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:8px;border:1px solid #bbb;min-height:25px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:42px;margin-top:65px}.signature{border-top:1px solid #111;padding-top:6px}.signature b{display:block;font-family:cursive;font-size:16px;font-weight:normal}.signature small{display:block;color:#555;margin-top:2px}@media print{body{margin:15mm}}
+  </style></head><body><div class="pdf-header"><img src="/mapua-logo.png" alt="Mapúa University logo"><div class="pdf-header-copy"><h1>MAPUA UNIVERSITY</h1><div class="meta">APPROVED BOOKING CONFIRMATION</div><div class="meta"><b>${escaped(booking.id)}</b></div></div></div>
+  <div class="approved">APPROVED</div><h2>Booking details</h2><div class="grid">
+  <div class="cell"><span class="label">Organization</span>${escaped(booking.org)}</div><div class="cell"><span class="label">Event</span>${escaped(booking.event)}</div>
+  <div class="cell"><span class="label">Reserved room</span>${escaped(booking.venue)}</div><div class="cell"><span class="label">Date and time</span>${escaped(booking.date)} · ${escaped(booking.time)}</div>
+  <div class="cell"><span class="label">Participants</span>${booking.people}</div><div class="cell"><span class="label">Status</span>Approved</div>
+  <div class="cell wide"><span class="label">Purpose</span>${escaped(booking.purpose)}</div><div class="cell wide"><span class="label">Equipment reserved</span>${equipment}</div></div>
+  <h2>Approval signatures</h2><div class="signatures"><div class="signature"><b>Prof. Maria Santos</b>Faculty Adviser<small>Approved electronically</small></div><div class="signature"><b>Dr. Elena Cruz</b>Dean / Subject Chair<small>Approved electronically</small></div><div class="signature"><b>Engr. Paolo Reyes</b>CDMO Representative<small>Approved electronically</small></div><div class="signature"><b>Admin Office</b>Final Booking Confirmation<small>Approved electronically</small></div></div>
+  <p><b>Approval record:</b> This confirmation reflects the final approved status recorded in Cardinal Resource Hub.</p><script>window.onload=()=>window.print();</script></body></html>`);
   popup.document.close();
 };
 
@@ -3325,6 +3344,11 @@ function Review({
             </div>
           ))}
         </div>
+        {booking.status === "Approved" && (
+          <div className="form-actions">
+            <Button secondary onClick={() => printApprovedBooking(booking)}>Export approved PDF</Button>
+          </div>
+        )}
         {!readOnly && (
           <>
             <textarea
