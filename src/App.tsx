@@ -3523,9 +3523,20 @@ function Review({
           </>
         )}
         {booking.status === "Approved" && (
-          <div className="form-actions">
-            <Button secondary onClick={() => printApprovedBooking(booking)}>Export approved PDF</Button>
-          </div>
+          <>
+            <div className="approval-signatures">
+              <h3>Approval signatures</h3>
+              <div className="approval-signature-grid">
+                <div><b>Maria Santos</b><span>Prof. Maria Santos · Faculty Adviser</span><small>Sample electronic signature</small></div>
+                <div><b>Elena Cruz</b><span>Dr. Elena Cruz · Dean / Subject Chair</span><small>Sample electronic signature</small></div>
+                <div><b>Paolo Reyes</b><span>Engr. Paolo Reyes · CDMO Representative</span><small>Sample electronic signature</small></div>
+                <div><b>Admin Office</b><span>Final Booking Confirmation</span><small>Sample electronic signature</small></div>
+              </div>
+            </div>
+            <div className="form-actions">
+              <Button secondary onClick={() => printApprovedBooking(booking)}>Export approved PDF</Button>
+            </div>
+          </>
         )}
         {!readOnly && (
           <>

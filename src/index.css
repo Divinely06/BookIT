@@ -1579,6 +1579,45 @@ td small {
   padding: 12px;
   resize: vertical;
 }
+.approval-signatures {
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 22px;
+}
+.approval-signatures h3 {
+  color: #4b5563;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  margin: 0 0 18px;
+  text-transform: uppercase;
+}
+.approval-signature-grid {
+  display: grid;
+  gap: 18px 20px;
+  grid-template-columns: 1fr 1fr;
+}
+.approval-signature-grid > div {
+  border-top: 1px solid #333;
+  padding-top: 8px;
+}
+.approval-signature-grid b {
+  display: block;
+  font-family: cursive;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+.approval-signature-grid span,
+.approval-signature-grid small {
+  color: #555;
+  display: block;
+  font-size: 10px;
+}
+.approval-signature-grid small {
+  color: #929292;
+  margin-top: 3px;
+}
 @media (max-width: 900px) {
   .auth-page {
     grid-template-columns: 1fr;
