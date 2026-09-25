@@ -267,17 +267,42 @@ const printApprovedBooking = (booking: Booking) => {
   const popup = window.open("", "_blank", "width=900,height=1100");
   if (!popup) return;
   const escaped = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const application: Partial<ActivityApplicationData> = booking.activityApplication ?? {};
+  const text = (value: unknown) => escaped(String(value ?? "Not provided"));
   const equipment = booking.equipment.length
     ? booking.equipment.map((item) => escaped(typeof item === "string" ? item : `${item.quantity} × equipment #${item.equipmentId}`)).join("<br>")
     : "None";
+  const budget = application.budgetProposal?.length
+    ? `<table><tr><th>Category</th><th>Details</th><th>Quantity</th><th>Unit cost</th><th>Subtotal</th></tr>${application.budgetProposal.map((item) => `<tr><td>${text(item.category)}</td><td>${text(item.details)}</td><td>${item.quantity}</td><td>₱${Number(item.unitCost || 0).toFixed(2)}</td><td>₱${(Number(item.quantity || 0) * Number(item.unitCost || 0)).toFixed(2)}</td></tr>`).join("")}</table>`
+    : "<p>None provided.</p>";
+  const eventFlow = application.eventFlow?.length
+    ? `<table><tr><th>Start</th><th>End</th><th>Activity</th></tr>${application.eventFlow.map((item) => `<tr><td>${text(item.startTime)}</td><td>${text(item.endTime)}</td><td>${text(item.activity)}</td></tr>`).join("")}</table>`
+    : "<p>None provided.</p>";
+  const projectManagement = application.projectManagement?.length
+    ? `<table><tr><th>Group</th><th>Position</th><th>Name</th><th>Student number</th><th>Email</th></tr>${application.projectManagement.map((item) => `<tr><td>${text(item.group)}</td><td>${text(item.position)}</td><td>${text(item.name)}</td><td>${text(item.studentNumber)}</td><td>${text(item.email)}</td></tr>`).join("")}</table>`
+    : "<p>None provided.</p>";
+  const missionAlignment = application.missionAlignment?.length
+    ? application.missionAlignment.map((item) => `<li>${text(item)}</li>`).join("")
+    : "<li>None provided.</li>";
   popup.document.write(`<!doctype html><html><head><title>Approved Booking - ${escaped(booking.event)}</title><style>
-    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}.pdf-header{display:flex;align-items:center;gap:22px;border-bottom:2px solid #c8102e;padding-bottom:12px}.pdf-header img{width:100px;height:auto;max-height:90px;object-fit:contain}.pdf-header-copy{flex:1;text-align:center}.pdf-header-copy h1{font-size:19px;margin:0}.meta{text-align:center;margin:4px}.approved{margin:20px 0;padding:12px;border:2px solid #39805a;color:#276b49;text-align:center;font-size:18px;font-weight:bold;letter-spacing:.08em}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:8px;border:1px solid #bbb;min-height:25px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:42px;margin-top:65px}.signature{border-top:1px solid #111;padding-top:6px}.signature b{display:block;font-family:cursive;font-size:16px;font-weight:normal}.signature small{display:block;color:#555;margin-top:2px}@media print{body{margin:15mm}}
+    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}.pdf-header{display:flex;align-items:center;gap:22px;border-bottom:2px solid #c8102e;padding-bottom:12px}.pdf-header img{width:100px;height:auto;max-height:90px;object-fit:contain}.pdf-header-copy{flex:1;text-align:center}.pdf-header-copy h1{font-size:19px;margin:0}.meta{text-align:center;margin:4px}.approved{margin:20px 0;padding:12px;border:2px solid #39805a;color:#276b49;text-align:center;font-size:18px;font-weight:bold;letter-spacing:.08em}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:8px;border:1px solid #bbb;min-height:25px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}h2{font-size:14px;border-bottom:1px solid #111;padding-bottom:5px;margin-top:24px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:10px}th,td{border:1px solid #aaa;padding:6px;text-align:left;vertical-align:top}ul{margin:5px 0;padding-left:20px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:42px;margin-top:65px}.signature{border-top:1px solid #111;padding-top:6px}.signature b{display:block;font-family:cursive;font-size:16px;font-weight:normal}.signature small{display:block;color:#555;margin-top:2px}@media print{body{margin:15mm}}
   </style></head><body><div class="pdf-header"><img src="/mapua-logo.png" alt="Mapúa University logo"><div class="pdf-header-copy"><h1>MAPUA UNIVERSITY</h1><div class="meta">APPROVED BOOKING CONFIRMATION</div><div class="meta"><b>${escaped(booking.id)}</b></div></div></div>
   <div class="approved">APPROVED</div><h2>Booking details</h2><div class="grid">
-  <div class="cell"><span class="label">Organization</span>${escaped(booking.org)}</div><div class="cell"><span class="label">Event</span>${escaped(booking.event)}</div>
-  <div class="cell"><span class="label">Reserved room</span>${escaped(booking.venue)}</div><div class="cell"><span class="label">Date and time</span>${escaped(booking.date)} · ${escaped(booking.time)}</div>
-  <div class="cell"><span class="label">Participants</span>${booking.people}</div><div class="cell"><span class="label">Status</span>Approved</div>
-  <div class="cell wide"><span class="label">Purpose</span>${escaped(booking.purpose)}</div><div class="cell wide"><span class="label">Equipment reserved</span>${equipment}</div></div>
+  <div class="cell"><span class="label">Organization</span>${text(application.organization || booking.org)}</div><div class="cell"><span class="label">Event</span>${text(application.eventTitle || booking.event)}</div>
+  <div class="cell"><span class="label">Reserved room</span>${text(application.venue || booking.venue)}</div><div class="cell"><span class="label">Date and time</span>${text(application.activityDate || booking.eventDate || booking.date)} · ${text(application.startTime || booking.time.split(" – ")[0])} - ${text(application.endTime || booking.time.split(" – ")[1])}</div>
+  <div class="cell"><span class="label">Participants</span>${application.people ?? booking.people}</div><div class="cell"><span class="label">Status</span>Approved</div>
+  <div class="cell wide"><span class="label">Purpose</span>${text(application.purpose || booking.purpose)}</div><div class="cell wide"><span class="label">Equipment reserved</span>${equipment}</div></div>
+  <h2>Applicant and activity information</h2><div class="grid">
+  <div class="cell"><span class="label">School / academic year</span>${text(application.school)} / ${text(application.academicYear)}</div><div class="cell"><span class="label">Submission date</span>${text(application.submissionDate)}</div>
+  <div class="cell"><span class="label">Applicant / student number</span>${text(application.applicantName)} / ${text(application.studentNumber)}</div><div class="cell"><span class="label">Program / year</span>${text(application.programYear)}</div>
+  <div class="cell"><span class="label">Position</span>${text(application.position)}</div><div class="cell"><span class="label">Category / size</span>${text(application.category)} / ${text(application.size)}</div>
+  <div class="cell"><span class="label">Member count</span>${application.memberCount ?? "Not provided"}</div><div class="cell"><span class="label">Nature</span>${text(application.nature)}</div>
+  <div class="cell"><span class="label">Mode</span>${text(application.mode)}</div><div class="cell"><span class="label">Tagline</span>${text(application.tagline)}</div>
+  <div class="cell wide"><span class="label">Target participants</span>${text(application.targetParticipants)}</div>
+  <div class="cell wide"><span class="label">Objectives</span>${text(application.objectives)}</div>
+  <div class="cell wide"><span class="label">Individual contribution</span>${text(application.individualContribution)}</div></div>
+  <h2>Alignment</h2><div class="grid"><div class="cell wide"><span class="label">SDG alignment</span>${text(application.sdgAlignment || application.sdgs?.join(", "))}</div><div class="cell wide"><span class="label">Mission alignment</span><ul>${missionAlignment}</ul></div><div class="cell wide"><span class="label">Core values explanation</span>${text(application.coreValuesExplanation)}</div><div class="cell wide"><span class="label">PEO / PO</span>${text(application.peoPo)}</div></div>
+  <h2>Budget proposal</h2>${budget}<h2>Event flow</h2>${eventFlow}<h2>Project management</h2>${projectManagement}
   <h2>Approval signatures</h2><div class="signatures"><div class="signature"><b>Prof. Maria Santos</b>Faculty Adviser<small>Approved electronically</small></div><div class="signature"><b>Dr. Elena Cruz</b>Dean / Subject Chair<small>Approved electronically</small></div><div class="signature"><b>Engr. Paolo Reyes</b>CDMO Representative<small>Approved electronically</small></div><div class="signature"><b>Admin Office</b>Final Booking Confirmation<small>Approved electronically</small></div></div>
   <p><b>Approval record:</b> This confirmation reflects the final approved status recorded in Cardinal Resource Hub.</p><script>window.onload=()=>window.print();</script></body></html>`);
   popup.document.close();
