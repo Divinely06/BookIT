@@ -230,23 +230,26 @@ const printActivityApplication = (data: ActivityApplicationData, shared: {
   startTime: string;
   endTime: string;
   purpose: string;
+  equipment: string[];
 }) => {
   const popup = window.open("", "_blank", "width=900,height=1100");
   if (!popup) return;
   const escaped = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   popup.document.write(`<!doctype html><html><head><title>FM-SA-14-01</title><style>
-    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}h1{font-size:18px;text-align:center;margin:0}h2{font-size:14px;border-bottom:1px solid #111;padding-bottom:4px;margin:20px 0 8px}.meta{text-align:center;margin:4px}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:7px;border:1px solid #bbb;min-height:24px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}.checks{display:grid;gap:7px;margin:10px 0}.check-item{display:flex;align-items:flex-start;gap:6px}.check-box{flex:0 0 auto}.signature{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px}.line{border-top:1px solid #111;padding-top:5px}@media print{body{margin:15mm}}
-  </style></head><body><h1>MAPUA UNIVERSITY</h1><div class="meta">STUDENT ACTIVITY APPLICATION FORM</div><div class="meta"><b>FM-SA-14-01</b> | Effective March 1, 2024</div>
+    body{font:12px Arial,sans-serif;color:#111;margin:36px;line-height:1.4}.pdf-header{display:flex;align-items:center;gap:18px;margin-bottom:8px}.pdf-header img{width:62px;height:62px;object-fit:contain}.pdf-header-copy{flex:1;text-align:center}.pdf-header-copy h1{font-size:18px;margin:0}.meta{text-align:center;margin:4px}h2{font-size:14px;border-bottom:1px solid #111;padding-bottom:4px;margin:20px 0 8px}.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #111}.cell{padding:7px;border:1px solid #bbb;min-height:24px}.wide{grid-column:1/-1}.label{font-size:9px;text-transform:uppercase;color:#555;display:block}.checks{display:grid;gap:7px;margin:10px 0}.check-item{display:flex;align-items:flex-start;gap:6px}.check-box{flex:0 0 auto}.signature{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px}.line{border-top:1px solid #111;padding-top:5px}@media print{body{margin:15mm}}
+  </style></head><body><div class="pdf-header"><img src="/mapua-logo.png" alt="Mapúa University logo"><div class="pdf-header-copy"><h1>MAPUA UNIVERSITY</h1><div class="meta">STUDENT ACTIVITY APPLICATION FORM</div><div class="meta"><b>FM-SA-14-01</b> | Effective March 1, 2024</div></div></div>
   <h2>Applicant and activity information</h2><div class="grid">
   <div class="cell"><span class="label">Organization</span>${escaped(shared.organization)}</div><div class="cell"><span class="label">Submission date</span>${escaped(data.submissionDate)}</div>
   <div class="cell"><span class="label">Applicant</span>${escaped(data.applicantName)} (${escaped(data.studentNumber)})</div><div class="cell"><span class="label">Program and year</span>${escaped(data.programYear)}</div>
   <div class="cell"><span class="label">Position</span>${escaped(data.position)}</div><div class="cell"><span class="label">Organization/course and section</span>${escaped(data.organizationCourseSection)}</div>
   <div class="cell"><span class="label">Category / size</span>${escaped(data.category)} / ${escaped(data.size)}</div><div class="cell"><span class="label">Class or organization members</span>${data.memberCount}</div>
   <div class="cell"><span class="label">Activity title</span>${escaped(shared.event)}</div><div class="cell"><span class="label">Nature</span>${escaped(data.nature)}</div>
-  <div class="cell"><span class="label">Venue / date / time</span>${escaped(shared.venue)} / ${escaped(shared.date)} / ${escaped(shared.startTime)} - ${escaped(shared.endTime)}</div><div class="cell"><span class="label">Expected participants</span>${shared.people}</div>
+  <div class="cell"><span class="label">Reserved room</span>${escaped(shared.venue)}</div><div class="cell"><span class="label">Date / time</span>${escaped(shared.date)} / ${escaped(shared.startTime)} - ${escaped(shared.endTime)}</div>
+  <div class="cell"><span class="label">Expected participants</span>${shared.people}</div><div class="cell"><span class="label">Mode</span>${escaped(data.mode || "N/A")}</div>
+  <div class="cell wide"><span class="label">Equipment requested</span>${escaped(shared.equipment.length ? shared.equipment.join(", ") : "None")}</div>
   <div class="cell wide"><span class="label">Objectives</span>${escaped(data.objectives)}</div><div class="cell wide"><span class="label">Purpose</span>${escaped(shared.purpose)}</div>
   <div class="cell"><span class="label">Individual contribution</span>${escaped(data.individualContribution)}</div><div class="cell"><span class="label">Proposed budget</span>To be completed from Budget Proposal</div></div>
-  <h2>Mission alignment</h2><div class="checks">${data.missionAlignment.map((item) => `<div class="check-item"><span class="check-box">&#9745;</span><span>${escaped(item)}</span></div>`).join("")}</div><div class="cell"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell"><span class="label">PEO/PO</span>${escaped(data.peoPo || "")}</div>
+  <h2>Proposal alignment</h2><div class="grid"><div class="cell"><span class="label">School / academic year</span>${escaped(data.school || "N/A")} / ${escaped(data.academicYear || "N/A")}</div><div class="cell"><span class="label">Target participants</span>${escaped(data.targetParticipants || "N/A")}</div><div class="cell wide"><span class="label">SDG alignment</span>${escaped(data.sdgAlignment || data.sdgs?.join(", ") || "N/A")}</div><div class="cell wide"><span class="label">Mission alignment</span><div class="checks">${data.missionAlignment.map((item) => `<div class="check-item"><span class="check-box">&#9745;</span><span>${escaped(item)}</span></div>`).join("")}</div></div><div class="cell wide"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell wide"><span class="label">PEO/PO</span>${escaped(data.peoPo || "")}</div></div>
   <h2>Signatures and approvals</h2><div class="signature"><div class="line">Class Officer<br>Signature / date</div><div class="line">Faculty Adviser<br>Signature / date</div><div class="line">Dean / Subject Chair<br>Signature / date</div><div class="line">Asst. VP OSAAR<br>Signature / date</div></div>
   <p><b>Submission rule:</b> Submit at least 10 days before the activity. Post-activity documents are due within 3 days after.</p><script>window.onload=()=>window.print();</script></body></html>`);
   popup.document.close();
@@ -2896,7 +2899,7 @@ function BookingForm({
             </div>
             <p className="muted form-note">Day is calculated from the event date. Proposed budget will be supplied by the Budget Proposal form. Submit at least 10 days before the activity; post-activity documents are due within 3 days after.</p>
             <div className="form-actions inline-actions">
-              <Button secondary onClick={() => printActivityApplication(activityFormData(), { organization: organization.name, event, date, venue, people: Number(people), startTime, endTime, purpose })}>Export Form 1 PDF</Button>
+              <Button secondary onClick={() => printActivityApplication(activityFormData(), { organization: organization.name, event, date, venue, people: Number(people), startTime, endTime, purpose, equipment: Object.entries(equipmentRequests).filter(([, quantity]) => quantity > 0).map(([name, quantity]) => `${quantity} × ${name}`) })}>Export Form 1 PDF</Button>
               <Button secondary onClick={saveDraft} disabled={submitting}>Save draft</Button>
             </div>
           </div>
