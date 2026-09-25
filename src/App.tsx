@@ -41,6 +41,12 @@ const localDateValue = () => {
 };
 
 type Role = "organization" | "faculty" | "dean" | "cdmo" | "admin";
+const demoStaffUserIds: Partial<Record<Role, number>> = {
+  faculty: 1,
+  dean: 4,
+  admin: 2,
+  cdmo: 3,
+};
 type UserSession = {
   userId: number;
   role: Role;
@@ -661,11 +667,11 @@ function Auth({
       (role) => `${role}@mapua.edu.ph` === email.trim().toLowerCase(),
     ) as Role | undefined;
     const fallbackUser: UserSession | undefined = email.trim().toLowerCase() === "eblancaflor@mapua.edu.ph"
-      ? { userId: 0, role: "faculty", name: "Prof. Eblancaflor", email }
+      ? { userId: 1, role: "faculty", name: "Prof. Eblancaflor", email }
       : undefined;
     if ((staffRole || fallbackUser) && password === "demo") {
       onLogin(staffRole ?? "faculty", undefined, fallbackUser ?? {
-        userId: 0,
+        userId: demoStaffUserIds[staffRole!] ?? 0,
         role: staffRole! as Role,
         name: roleInfo[staffRole!].name,
         email,
@@ -4245,6 +4251,11 @@ export default function App() {
     try {
       const parsed = JSON.parse(localStorage.getItem(sessionStorageKey) ?? "null") as StoredSession | null;
       if (!parsed || !["organization", "faculty", "dean", "admin", "cdmo"].includes(parsed.role)) return null;
+      const migratedUserId = demoStaffUserIds[parsed.role];
+      if (parsed.user && parsed.user.userId === 0 && migratedUserId !== undefined) {
+        parsed.user = { ...parsed.user, userId: migratedUserId };
+        localStorage.setItem(sessionStorageKey, JSON.stringify(parsed));
+      }
       return parsed;
     } catch {
       return null;
