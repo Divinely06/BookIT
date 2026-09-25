@@ -122,6 +122,13 @@ type Booking = {
 };
 
 type ActivityApplicationData = {
+  school?: string;
+  academicYear?: string;
+  tagline?: string;
+  mode?: "Face-to-face" | "Online";
+  targetParticipants?: string;
+  sdgs?: string[];
+  sdgExplanations?: Record<string, string>;
   eventTitle?: string;
   activityDate?: string;
   venue?: string;
@@ -796,7 +803,6 @@ function Shell({
     role === "organization"
       ? [
           ["dashboard", "Overview", "⌂"],
-          ["proposals", "Event proposals", "▤"],
           ["facilities", "Facilities", "▦"],
           ["equipment", "Equipment", "▣"],
           ["requests", "My requests", "☷"],
@@ -2148,9 +2154,6 @@ function StudentView({
       .catch(() => setDateFacilities(availableFacilities));
   }, [availabilityDate, availableFacilities]);
   if (page === "profile") return <Profile role="organization" user={user} />;
-  if (page === "proposals" && currentOrganization) {
-    return <EventProposalPage user={user} organization={currentOrganization} />;
-  }
   if (showForm && !currentOrganization)
     return (
       <>
@@ -2428,6 +2431,13 @@ function BookingForm({
 }) {
   const [event, setEvent] = useState("");
   const [date, setDate] = useState("");
+  const [school, setSchool] = useState("Mapúa University");
+  const [academicYear, setAcademicYear] = useState("2026-2027");
+  const [tagline, setTagline] = useState("");
+  const [mode, setMode] = useState<"Face-to-face" | "Online">("Face-to-face");
+  const [targetParticipants, setTargetParticipants] = useState("");
+  const [sdgs, setSdgs] = useState<string[]>([]);
+  const [sdgExplanations, setSdgExplanations] = useState<Record<string, string>>({});
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("16:00");
   const [venue, setVenue] = useState(
@@ -2479,6 +2489,13 @@ function BookingForm({
         if (!application?.form_data || application.status !== "Draft") return;
         const saved = application.form_data;
         setApplicationId(application.application_id ?? null);
+        setSchool(saved.school ?? "Mapúa University");
+        setAcademicYear(saved.academicYear ?? "2026-2027");
+        setTagline(saved.tagline ?? "");
+        setMode(saved.mode ?? "Face-to-face");
+        setTargetParticipants(saved.targetParticipants ?? "");
+        setSdgs(saved.sdgs ?? []);
+        setSdgExplanations(saved.sdgExplanations ?? {});
         setEvent(saved.eventTitle ?? "");
         setDate(saved.activityDate ?? "");
         setVenue(saved.venue ?? venue);
@@ -2566,6 +2583,13 @@ function BookingForm({
     }
   }, [dateFacilities, venue]);
   const activityFormData = (): ActivityApplicationData => ({
+    school,
+    academicYear,
+    tagline,
+    mode,
+    targetParticipants,
+    sdgs,
+    sdgExplanations,
     eventTitle: event,
     activityDate: date,
     venue,
@@ -2713,11 +2737,32 @@ function BookingForm({
                 </div>
               </div>
               <Field
+                label="School"
+                type="text"
+                value={school}
+                onChange={setSchool}
+                placeholder="Mapúa University"
+              />
+              <Field
+                label="Academic year"
+                type="text"
+                value={academicYear}
+                onChange={setAcademicYear}
+                placeholder="2026-2027"
+              />
+              <Field
                 label="Event name"
                 type="text"
                 value={event}
                 onChange={setEvent}
                 placeholder="e.g. General Assembly"
+              />
+              <Field
+                label="Tagline"
+                type="text"
+                value={tagline}
+                onChange={setTagline}
+                placeholder="Optional event tagline"
               />
               <Field
                 label="Participants"
@@ -2750,6 +2795,47 @@ function BookingForm({
                   rows={4}
                 />
               </div>
+              <div className="field">
+                <label>Mode</label>
+                <div className="choice-row">
+                  {(["Face-to-face", "Online"] as const).map((value) => (
+                    <label key={value}>
+                      <input type="radio" checked={mode === value} onChange={() => setMode(value)} /> {value}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Field
+                label="Target participants"
+                type="text"
+                value={targetParticipants}
+                onChange={setTargetParticipants}
+                placeholder="Organizations, classes, or community"
+              />
+              <div className="field full">
+                <label>Sustainable Development Goals</label>
+                <div className="choice-grid">
+                  {["SDG 3 Good Health", "SDG 4 Quality Education", "SDG 5 Gender Equality", "SDG 10 Reduced Inequalities", "SDG 11 Sustainable Cities", "SDG 17 Partnerships"].map((sdg) => (
+                    <label key={sdg}>
+                      <input
+                        type="checkbox"
+                        checked={sdgs.includes(sdg)}
+                        onChange={(event) => setSdgs(event.target.checked ? [...sdgs, sdg] : sdgs.filter((item) => item !== sdg))}
+                      /> {sdg}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {sdgs.map((sdg) => (
+                <div className="field full" key={sdg}>
+                  <label>{sdg} explanation</label>
+                  <input
+                    value={sdgExplanations[sdg] ?? ""}
+                    onChange={(event) => setSdgExplanations({ ...sdgExplanations, [sdg]: event.target.value })}
+                    placeholder={`Explain how the activity supports ${sdg}`}
+                  />
+                </div>
+              ))}
               <div className="field full">
                 <label>Venue</label>
                 <select
