@@ -10,6 +10,10 @@ export default async function handler(request: Request, response: Response) {
       response.status(400).json({ error: "Organization and an update are required" });
       return;
     }
+    if (status !== undefined && !["Active", "Inactive", "Pending"].includes(status)) {
+      response.status(400).json({ error: "Invalid organization status" });
+      return;
+    }
     if (password !== undefined && (typeof password !== "string" || password.length < 4)) {
       response.status(400).json({ error: "Password must be at least 4 characters" });
       return;
@@ -33,6 +37,13 @@ export default async function handler(request: Request, response: Response) {
       if (!organization) {
         response.status(404).json({ error: "Organization not found" });
         return;
+      }
+      if (status) {
+        await sql`
+          update user_organization
+          set status = ${status === "Active" ? "Active" : "Inactive"}
+          where org_id = ${Number(orgId)}
+        `;
       }
       if (password) {
         const [account] = await sql`

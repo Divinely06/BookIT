@@ -3270,13 +3270,11 @@ function StaffView({
                   setActionError(result.error ?? "Unable to update this booking.");
                   return;
                 }
-                setBookings(
-                  bookings.map((b) =>
-                    b.id === selected.id
-                      ? { ...b, status, rejectionReason: status === "Rejected" ? remarks : undefined }
-                      : b,
-                  ),
-                );
+                setBookings((current) => current.map((b) =>
+                  b.id === selected.id
+                    ? { ...b, status, rejectionReason: status === "Rejected" ? remarks : undefined }
+                    : b,
+                ));
                 setSelected(null);
               } catch {
                 setActionError("Unable to reach the booking service. Try again.");
@@ -3595,6 +3593,7 @@ function Organizations({
   const [password, setPassword] = useState("");
   const [facultyAdviser, setFacultyAdviser] = useState("Prof. Maria Santos");
   const [message, setMessage] = useState("");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const startCreate = () => {
     setEditing({
       id: 0,
@@ -3770,25 +3769,33 @@ function Organizations({
                     </button>
                     <button
                       className="text-button table-action"
+                      disabled={updatingId === item.id}
                       onClick={async () => {
                         const nextStatus = item.status === "Inactive" ? "Active" : "Inactive";
-                        const response = await fetch(`${apiBase}/api/organizations`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ orgId: item.id, status: nextStatus }),
-                        });
-                        if (!response.ok) {
-                          const result = await response.json().catch(() => ({}));
-                          setMessage(result.error ?? "Unable to update organization status.");
-                          return;
+                        setUpdatingId(item.id);
+                        try {
+                          const response = await fetch(`${apiBase}/api/organizations`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ orgId: item.id, status: nextStatus }),
+                          });
+                          if (!response.ok) {
+                            const result = await response.json().catch(() => ({}));
+                            setMessage(result.error ?? "Unable to update organization status.");
+                            return;
+                          }
+                          setOrganizations((current) => current.map((organization) =>
+                            organization.id === item.id ? { ...organization, status: nextStatus } : organization,
+                          ));
+                          setMessage(`${item.name} is now ${nextStatus.toLowerCase()}.`);
+                        } catch {
+                          setMessage("Unable to reach the organization service.");
+                        } finally {
+                          setUpdatingId(null);
                         }
-                        setOrganizations((current) => current.map((organization) =>
-                          organization.id === item.id ? { ...organization, status: nextStatus } : organization,
-                        ));
-                        setMessage(`${item.name} is now ${nextStatus.toLowerCase()}.`);
                       }}
                     >
-                      {item.status === "Inactive" ? "Activate" : "Deactivate"}
+                      {updatingId === item.id ? "Updating..." : item.status === "Inactive" ? "Activate" : "Deactivate"}
                     </button>
                   </td>
                 </tr>
