@@ -118,7 +118,6 @@ const validActivityForm = (formData: Record<string, unknown>) => {
       formData.studentNumber &&
       formData.programYear &&
       formData.position &&
-      formData.organizationCourseSection &&
       formData.nature &&
       formData.objectives &&
       Array.isArray(missionAlignment) &&

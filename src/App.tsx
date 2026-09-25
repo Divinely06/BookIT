@@ -122,6 +122,7 @@ type Booking = {
 };
 
 type ActivityApplicationData = {
+  organization?: string;
   school?: string;
   academicYear?: string;
   tagline?: string;
@@ -2612,6 +2613,7 @@ function BookingForm({
     }
   }, [dateFacilities, venue]);
   const activityFormData = (): ActivityApplicationData => ({
+    organization: organization.name,
     school,
     academicYear,
     tagline,
@@ -3352,7 +3354,7 @@ function Review({
     {
       title: "Applicant & activity info",
       fields: [
-        ["Organization", booking.org],
+        ["Organization", application.organization || booking.org],
         ["School", application.school || "—"],
         ["Academic year", application.academicYear || "—"],
         ["Applicant", `${application.applicantName || "—"}${application.studentNumber ? ` (${application.studentNumber})` : ""}`],
