@@ -2813,7 +2813,8 @@ function BookingForm({
                 placeholder="Organizations, classes, or community"
               />
               <div className="field full">
-                <label>Sustainable Development Goals</label>
+                <label>Sustainable Development Goal alignment <small>(select all that apply)</small></label>
+                <p className="muted form-note">Identify the goals supported by this activity, then explain each selected goal below.</p>
                 <div className="choice-grid">
                   {["SDG 3 Good Health", "SDG 4 Quality Education", "SDG 5 Gender Equality", "SDG 10 Reduced Inequalities", "SDG 11 Sustainable Cities", "SDG 17 Partnerships"].map((sdg) => (
                     <label key={sdg}>
@@ -2828,7 +2829,7 @@ function BookingForm({
               </div>
               {sdgs.map((sdg) => (
                 <div className="field full" key={sdg}>
-                  <label>{sdg} explanation</label>
+                  <label>{sdg} alignment explanation</label>
                   <input
                     value={sdgExplanations[sdg] ?? ""}
                     onChange={(event) => setSdgExplanations({ ...sdgExplanations, [sdg]: event.target.value })}
