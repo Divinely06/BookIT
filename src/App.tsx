@@ -287,6 +287,7 @@ function mapBooking(row: Record<string, any>): Booking {
       })
     : "Date unavailable";
   const activityApplication = row.activity_application && typeof row.activity_application === "object"
+    && Object.keys(row.activity_application).length > 0
     ? row.activity_application as ActivityApplicationData
     : undefined;
   return {
@@ -3411,26 +3412,28 @@ function Review({
         <span className="eyebrow">
           {booking.id} · {roleInfo[role].label}
         </span>
-        <h2>{booking.event}</h2>
+        <h2>{application.eventTitle || booking.event}</h2>
         <p className="muted">
-          {booking.org} · {booking.venue} · {booking.date}
+          {booking.org} · {application.venue || booking.venue} · {application.activityDate || booking.date}
         </p>
         <div className="review-grid">
           <div>
             <span>Date & time</span>
             <b>
-              {booking.date}
+              {application.activityDate || booking.date}
               <br />
-              {booking.time}
+              {application.startTime && application.endTime
+                ? `${application.startTime} - ${application.endTime}`
+                : booking.time}
             </b>
           </div>
           <div>
             <span>Participants</span>
-            <b>{booking.people} people</b>
+            <b>{application.people ?? booking.people} people</b>
           </div>
           <div>
             <span>Purpose</span>
-            <b>{booking.purpose}</b>
+            <b>{application.purpose || booking.purpose}</b>
           </div>
           <div>
             <span>Current status</span>
