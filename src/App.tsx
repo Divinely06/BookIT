@@ -127,6 +127,7 @@ type ActivityApplicationData = {
   tagline?: string;
   mode?: "Face-to-face" | "Online";
   targetParticipants?: string;
+  sdgAlignment?: string;
   sdgs?: string[];
   sdgExplanations?: Record<string, string>;
   eventTitle?: string;
@@ -2436,8 +2437,7 @@ function BookingForm({
   const [tagline, setTagline] = useState("");
   const [mode, setMode] = useState<"Face-to-face" | "Online">("Face-to-face");
   const [targetParticipants, setTargetParticipants] = useState("");
-  const [sdgs, setSdgs] = useState<string[]>([]);
-  const [sdgExplanations, setSdgExplanations] = useState<Record<string, string>>({});
+  const [sdgAlignment, setSdgAlignment] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("16:00");
   const [venue, setVenue] = useState(
@@ -2494,8 +2494,7 @@ function BookingForm({
         setTagline(saved.tagline ?? "");
         setMode(saved.mode ?? "Face-to-face");
         setTargetParticipants(saved.targetParticipants ?? "");
-        setSdgs(saved.sdgs ?? []);
-        setSdgExplanations(saved.sdgExplanations ?? {});
+        setSdgAlignment(saved.sdgAlignment ?? saved.sdgs?.join(", ") ?? "");
         setEvent(saved.eventTitle ?? "");
         setDate(saved.activityDate ?? "");
         setVenue(saved.venue ?? venue);
@@ -2588,8 +2587,7 @@ function BookingForm({
     tagline,
     mode,
     targetParticipants,
-    sdgs,
-    sdgExplanations,
+    sdgAlignment,
     eventTitle: event,
     activityDate: date,
     venue,
@@ -2813,30 +2811,15 @@ function BookingForm({
                 placeholder="Organizations, classes, or community"
               />
               <div className="field full">
-                <label>Sustainable Development Goal alignment <small>(select all that apply)</small></label>
-                <p className="muted form-note">Identify the goals supported by this activity, then explain each selected goal below.</p>
-                <div className="choice-grid">
-                  {["SDG 3 Good Health", "SDG 4 Quality Education", "SDG 5 Gender Equality", "SDG 10 Reduced Inequalities", "SDG 11 Sustainable Cities", "SDG 17 Partnerships"].map((sdg) => (
-                    <label key={sdg}>
-                      <input
-                        type="checkbox"
-                        checked={sdgs.includes(sdg)}
-                        onChange={(event) => setSdgs(event.target.checked ? [...sdgs, sdg] : sdgs.filter((item) => item !== sdg))}
-                      /> {sdg}
-                    </label>
-                  ))}
-                </div>
+                <label>Sustainable Development Goal alignment</label>
+                <input
+                  type="text"
+                  value={sdgAlignment}
+                  onChange={(event) => setSdgAlignment(event.target.value)}
+                  placeholder="e.g. SDG 4 Quality Education; SDG 17 Partnerships"
+                />
+                <small className="field-help">List the SDG number and title supported by this activity.</small>
               </div>
-              {sdgs.map((sdg) => (
-                <div className="field full" key={sdg}>
-                  <label>{sdg} alignment explanation</label>
-                  <input
-                    value={sdgExplanations[sdg] ?? ""}
-                    onChange={(event) => setSdgExplanations({ ...sdgExplanations, [sdg]: event.target.value })}
-                    placeholder={`Explain how the activity supports ${sdg}`}
-                  />
-                </div>
-              ))}
               <div className="field full">
                 <label>Venue</label>
                 <select
