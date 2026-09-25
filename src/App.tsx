@@ -145,7 +145,6 @@ type ActivityApplicationData = {
   programYear: string;
   submissionDate: string;
   position: string;
-  organizationCourseSection: string;
   nature: string;
   objectives: string;
   individualContribution: string;
@@ -244,7 +243,7 @@ const printActivityApplication = (data: ActivityApplicationData, shared: {
   <h2>Applicant and activity information</h2><div class="grid">
   <div class="cell"><span class="label">Organization</span>${escaped(shared.organization)}</div><div class="cell"><span class="label">Submission date</span>${escaped(data.submissionDate)}</div>
   <div class="cell"><span class="label">Applicant</span>${escaped(data.applicantName)} (${escaped(data.studentNumber)})</div><div class="cell"><span class="label">Program and year</span>${escaped(data.programYear)}</div>
-  <div class="cell"><span class="label">Position</span>${escaped(data.position)}</div><div class="cell"><span class="label">Organization/course and section</span>${escaped(data.organizationCourseSection)}</div>
+  <div class="cell"><span class="label">Position</span>${escaped(data.position)}</div>
   <div class="cell"><span class="label">Category / size</span>${escaped(data.category)} / ${escaped(data.size)}</div><div class="cell"><span class="label">Class or organization members</span>${data.memberCount}</div>
   <div class="cell"><span class="label">Activity title</span>${escaped(shared.event)}</div><div class="cell"><span class="label">Nature</span>${escaped(data.nature)}</div>
   <div class="cell"><span class="label">Reserved room</span>${escaped(shared.venue)}</div><div class="cell"><span class="label">Date / time</span>${escaped(shared.date)} / ${escaped(shared.startTime)} - ${escaped(shared.endTime)}</div>
@@ -2483,7 +2482,6 @@ function BookingForm({
   const [studentNumber, setStudentNumber] = useState("");
   const [programYear, setProgramYear] = useState("");
   const [position, setPosition] = useState("");
-  const [organizationCourseSection, setOrganizationCourseSection] = useState("");
   const [nature, setNature] = useState("");
   const [objectives, setObjectives] = useState("");
   const [individualContribution, setIndividualContribution] = useState("");
@@ -2534,7 +2532,6 @@ function BookingForm({
         setStudentNumber(saved.studentNumber ?? "");
         setProgramYear(saved.programYear ?? "");
         setPosition(saved.position ?? "");
-        setOrganizationCourseSection(saved.organizationCourseSection ?? "");
         setNature(saved.nature ?? "");
         setObjectives(saved.objectives ?? "");
         setIndividualContribution(saved.individualContribution ?? "");
@@ -2628,7 +2625,6 @@ function BookingForm({
     programYear,
     submissionDate: localDateValue(),
     position,
-    organizationCourseSection,
     nature,
     objectives,
     individualContribution,
@@ -2675,7 +2671,7 @@ function BookingForm({
           onSubmit={async (e) => {
             e.preventDefault();
             if (!event || !date || !purpose || !venue || !applicantName || !studentNumber
-              || !programYear || !position || !organizationCourseSection || !nature || !objectives) {
+              || !programYear || !position || !nature || !objectives) {
               setError("Complete the required Form 1 fields before submitting.");
               return;
             }
@@ -2888,7 +2884,6 @@ function BookingForm({
               <Field label="Student number" type="text" value={studentNumber} onChange={setStudentNumber} placeholder="20XXXXXXX" />
               <Field label="Program and year" type="text" value={programYear} onChange={setProgramYear} placeholder="BSCS 3" />
               <Field label="Position" type="text" value={position} onChange={setPosition} placeholder="Class Officer" />
-              <Field label="Organization/course and section" type="text" value={organizationCourseSection} onChange={setOrganizationCourseSection} placeholder="Organization or course-section" />
               <Field label="Nature of activity" type="text" value={nature} onChange={setNature} placeholder="Meeting, seminar, outreach..." />
               <Field label="Individual contribution" type="text" value={individualContribution} onChange={setIndividualContribution} placeholder="Amount or details" />
               <div className="field full"><label>Objectives</label><textarea value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={4} placeholder="State the objectives of the activity" /></div>
