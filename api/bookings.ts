@@ -143,7 +143,12 @@ export default async function handler(request: Request, response: Response) {
         clientRequestId,
         attachment,
         equipment = [],
+        activityApplication,
+        formData,
       } = request.body ?? {};
+      const fullFormData = (activityApplication && typeof activityApplication === "object" && !Array.isArray(activityApplication)
+        ? activityApplication
+        : (formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {})) as Record<string, unknown>;
       const [requester] = requestedByUserId
         ? await sql`
             select u.user_id from app_user u
@@ -264,6 +269,19 @@ export default async function handler(request: Request, response: Response) {
         )
         returning booking_id
       `;
+      if (Object.keys(fullFormData).length > 0) {
+        await sql`
+          insert into activity_application (booking_id, org_id, applicant_user_id, form_data, status, submitted_at)
+          values (${booking.booking_id}, ${Number(orgId)}, ${Number(requester.user_id)}, ${JSON.stringify(fullFormData)}::jsonb, 'Submitted', now())
+          on conflict (booking_id) do update set
+            org_id = excluded.org_id,
+            applicant_user_id = excluded.applicant_user_id,
+            form_data = excluded.form_data,
+            status = 'Submitted',
+            updated_at = now(),
+            submitted_at = now()
+        `;
+      }
       if (attachment?.data && attachment.name) {
         await sql`
           insert into document (booking_id, file_name, file_path, content_type)

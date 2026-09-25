@@ -2206,23 +2206,26 @@ function StudentView({
         onCancel={() => setShowForm(false)}
           onSubmit={async (b) => {
           const [startTime, endTime] = b.time.split(" – ");
-            const response = await fetch(`${apiBase}/api/bookings`, {
+          const fullRequestData: Partial<ActivityApplicationData> = b.activityApplication ?? {};
+          const response = await fetch(`${apiBase}/api/bookings`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+            body: JSON.stringify({
+              ...fullRequestData,
               orgId: b.orgId,
               roomId: b.roomId,
-                requestedByUserId: user?.userId,
-                clientRequestId: b.requestKey,
-                attachment: b.attachment,
-                activityApplication: b.activityApplication,
-                equipment: b.equipment,
-              eventName: b.event,
-              participantCount: b.people,
-              eventDate: b.eventDate,
+              requestedByUserId: user?.userId,
+              clientRequestId: b.requestKey,
+              attachment: b.attachment,
+              activityApplication: fullRequestData,
+              formData: fullRequestData,
+              equipment: b.equipment,
+              eventName: b.event ?? fullRequestData.eventTitle ?? "",
+              participantCount: b.people ?? fullRequestData.people ?? 0,
+              eventDate: b.eventDate ?? fullRequestData.activityDate ?? "",
               startTime,
               endTime,
-              purpose: b.purpose,
+              purpose: b.purpose ?? fullRequestData.purpose ?? "",
             }),
           });
           if (!response.ok) {
