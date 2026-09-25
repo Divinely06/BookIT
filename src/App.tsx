@@ -144,6 +144,9 @@ type ActivityApplicationData = {
   missionAlignment: string[];
   coreValuesExplanation: string;
   peoPo: string;
+  budgetProposal?: { category: string; details: string; quantity: number; unitCost: number }[];
+  eventFlow?: { startTime: string; endTime: string; activity: string }[];
+  projectManagement?: { group: string; position: string; name: string; studentNumber: string; email: string }[];
 };
 
 type ProposalFormData = {
@@ -2452,6 +2455,15 @@ function BookingForm({
   const [missionAlignment, setMissionAlignment] = useState<string[]>([]);
   const [coreValuesExplanation, setCoreValuesExplanation] = useState("");
   const [peoPo, setPeoPo] = useState("");
+  const [budgetProposal, setBudgetProposal] = useState<ActivityApplicationData["budgetProposal"]>([
+    { category: "", details: "", quantity: 1, unitCost: 0 },
+  ]);
+  const [eventFlow, setEventFlow] = useState<ActivityApplicationData["eventFlow"]>([
+    { startTime: "09:00", endTime: "10:00", activity: "" },
+  ]);
+  const [projectManagement, setProjectManagement] = useState<ActivityApplicationData["projectManagement"]>([
+    { group: "", position: "", name: "", studentNumber: "", email: "" },
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [equipmentRequests, setEquipmentRequests] = useState<Record<string, number>>({});
   const [dateFacilities, setDateFacilities] = useState(availableFacilities);
@@ -2488,6 +2500,9 @@ function BookingForm({
         setMissionAlignment(saved.missionAlignment ?? []);
         setCoreValuesExplanation(saved.coreValuesExplanation ?? "");
         setPeoPo(saved.peoPo ?? "");
+        setBudgetProposal(saved.budgetProposal ?? [{ category: "", details: "", quantity: 1, unitCost: 0 }]);
+        setEventFlow(saved.eventFlow ?? [{ startTime: "09:00", endTime: "10:00", activity: "" }]);
+        setProjectManagement(saved.projectManagement ?? [{ group: "", position: "", name: "", studentNumber: "", email: "" }]);
       })
       .catch(() => undefined);
   }, [organization.id, user]);
@@ -2573,6 +2588,9 @@ function BookingForm({
     missionAlignment,
     coreValuesExplanation,
     peoPo,
+    budgetProposal,
+    eventFlow,
+    projectManagement,
   });
   const saveDraft = async () => {
     setSubmitting(true);
@@ -2779,11 +2797,32 @@ function BookingForm({
               <Field label="Nature of activity" type="text" value={nature} onChange={setNature} placeholder="Meeting, seminar, outreach..." />
               <Field label="Individual contribution" type="text" value={individualContribution} onChange={setIndividualContribution} placeholder="Amount or details" />
               <div className="field full"><label>Objectives</label><textarea value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={4} placeholder="State the objectives of the activity" /></div>
-              <div className="field full"><label>Mission alignment <small>(select at least one)</small></label><div className="choice-grid">
+              <div className="field full"><label>Mission alignment <small>(select at least one)</small></label><div className="mission-list">
                 {['The University shall provide a learning environment in order for its students to acquire the attributes that will make them globally competitive.', 'The Institute shall engage in economically viable research, development, and innovation.', 'The Institute shall provide state-of-the-art solutions to problems of industries and communities.'].map((value) => <label key={value}><input type="checkbox" checked={missionAlignment.includes(value)} onChange={(e) => setMissionAlignment(e.target.checked ? [...missionAlignment, value] : missionAlignment.filter((item) => item !== value))} /> {value}</label>)}
               </div></div>
               <div className="field full"><label>Mapúa Core Values explanation</label><textarea value={coreValuesExplanation} onChange={(e) => setCoreValuesExplanation(e.target.value)} rows={3} placeholder="Discipline, Excellence, Commitment, Integrity, Relevance" /></div>
               <div className="field full"><label>PEO/PO <small>(if and when applicable)</small></label><textarea value={peoPo} onChange={(e) => setPeoPo(e.target.value)} rows={2} placeholder="If and when applicable, enumerate the Program Educational Objectives (PEO) or Program Objectives (PO) Satisfied in this Activity" /></div>
+            </div>
+            <div className="form-section nested-section">
+              <h3>Event flow</h3>
+              <table className="entry-table"><thead><tr><th>Start</th><th>End</th><th>Activity</th><th>Action</th></tr></thead><tbody>
+                {(eventFlow ?? []).map((item, index) => <tr key={index}><td><input type="time" value={item.startTime} onChange={(e) => setEventFlow((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, startTime: e.target.value } : row))} /></td><td><input type="time" value={item.endTime} onChange={(e) => setEventFlow((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, endTime: e.target.value } : row))} /></td><td><input placeholder="Activity" value={item.activity} onChange={(e) => setEventFlow((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, activity: e.target.value } : row))} /></td><td><button type="button" className="text-button" onClick={() => setEventFlow((rows) => (rows ?? []).filter((_, rowIndex) => rowIndex !== index))}>Remove</button></td></tr>)}
+              </tbody></table>
+              <Button secondary onClick={() => setEventFlow((rows) => [...(rows ?? []), { startTime: "", endTime: "", activity: "" }])}>Add flow row</Button>
+            </div>
+            <div className="form-section nested-section">
+              <h3>Project management</h3>
+              <table className="entry-table"><thead><tr><th>Group</th><th>Position</th><th>Name</th><th>Student number</th><th>Email</th><th>Action</th></tr></thead><tbody>
+                {(projectManagement ?? []).map((item, index) => <tr key={index}>{(["group", "position", "name", "studentNumber", "email"] as const).map((key) => <td key={key}><input placeholder={key} value={item[key]} onChange={(e) => setProjectManagement((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, [key]: e.target.value } : row))} /></td>)}<td><button type="button" className="text-button" onClick={() => setProjectManagement((rows) => (rows ?? []).filter((_, rowIndex) => rowIndex !== index))}>Remove</button></td></tr>)}
+              </tbody></table>
+              <Button secondary onClick={() => setProjectManagement((rows) => [...(rows ?? []), { group: "", position: "", name: "", studentNumber: "", email: "" }])}>Add team member</Button>
+            </div>
+            <div className="form-section nested-section">
+              <h3>Budget proposal</h3>
+              <table className="entry-table"><thead><tr><th>Category</th><th>Details</th><th>Quantity</th><th>Unit cost</th><th>Subtotal</th><th>Action</th></tr></thead><tbody>
+                {(budgetProposal ?? []).map((item, index) => <tr key={index}><td><input placeholder="Category" value={item.category} onChange={(e) => setBudgetProposal((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, category: e.target.value } : row))} /></td><td><input placeholder="Details" value={item.details} onChange={(e) => setBudgetProposal((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, details: e.target.value } : row))} /></td><td><input type="number" min="0" value={item.quantity} onChange={(e) => setBudgetProposal((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, quantity: Number(e.target.value) || 0 } : row))} /></td><td><input type="number" min="0" value={item.unitCost} onChange={(e) => setBudgetProposal((rows) => (rows ?? []).map((row, rowIndex) => rowIndex === index ? { ...row, unitCost: Number(e.target.value) || 0 } : row))} /></td><td className="muted">₱{(item.quantity * item.unitCost).toFixed(2)}</td><td><button type="button" className="text-button" onClick={() => setBudgetProposal((rows) => (rows ?? []).filter((_, rowIndex) => rowIndex !== index))}>Remove</button></td></tr>)}
+              </tbody></table>
+              <Button secondary onClick={() => setBudgetProposal((rows) => [...(rows ?? []), { category: "", details: "", quantity: 1, unitCost: 0 }])}>Add budget item</Button>
             </div>
             <p className="muted form-note">Day is calculated from the event date. Proposed budget will be supplied by the Budget Proposal form. Submit at least 10 days before the activity; post-activity documents are due within 3 days after.</p>
             <div className="form-actions inline-actions">
