@@ -1528,6 +1528,8 @@ td small {
 .modal {
   max-width: 600px;
   width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: white;
   padding: 32px;
   position: relative;
