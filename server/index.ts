@@ -998,7 +998,8 @@ app.patch("/api/bookings/:id/status", async (request, response) => {
 
     await createBookingNotifications(bookingId, status, authorization.role, remarks);
     response.json(booking);
-  } catch {
+  } catch (error) {
+    console.error("Booking status update failed", error);
     response.status(409).json({ error: "Unable to update booking status" });
   }
 });
