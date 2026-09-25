@@ -2941,11 +2941,11 @@ function BookingForm({
             </div>
           </div>
           <div className="form-section">
-            <h3>Required documents</h3>
+            <h3>Additional documents <small>(optional)</small></h3>
             <div className="upload">
               <b>＋</b>
-              <label htmlFor="booking-attachment">Upload letter of intent or program flow</label>
-              <small>PDF or DOCX · up to 10 MB</small>
+              <label htmlFor="booking-attachment">Upload a letter of intent, program flow, or other supporting document</label>
+              <small>Optional · PDF or DOCX · up to 10 MB</small>
               <input
                 id="booking-attachment"
                 type="file"
