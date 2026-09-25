@@ -1194,6 +1194,7 @@ td small {
   line-height: 1.45;
 }
 .mission-list input {
+  width: auto;
   flex: 0 0 auto;
   margin-top: 2px;
   accent-color: var(--red);
