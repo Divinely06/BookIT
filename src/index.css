@@ -1223,6 +1223,44 @@ td small {
   border: 1px solid #d8d8d3;
   padding: 9px 10px;
 }
+.entry-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.entry-table th,
+.entry-table td {
+  border: 1px solid var(--line);
+  padding: 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+.entry-table th {
+  background: #f5f5f1;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.entry-table input,
+.entry-table select {
+  box-sizing: border-box;
+  min-width: 80px;
+  width: 100%;
+  border: 1px solid #d8d8d3;
+  padding: 8px;
+}
+.entry-table .check {
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .entry-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
 .proposal-summary {
   display: grid;
   gap: 4px;

@@ -234,10 +234,10 @@ const printActivityApplication = (data: ActivityApplicationData, shared: {
   <div class="cell"><span class="label">Activity title</span>${escaped(shared.event)}</div><div class="cell"><span class="label">Nature</span>${escaped(data.nature)}</div>
   <div class="cell"><span class="label">Venue / date / time</span>${escaped(shared.venue)} / ${escaped(shared.date)} / ${escaped(shared.startTime)} - ${escaped(shared.endTime)}</div><div class="cell"><span class="label">Expected participants</span>${shared.people}</div>
   <div class="cell wide"><span class="label">Objectives</span>${escaped(data.objectives)}</div><div class="cell wide"><span class="label">Purpose</span>${escaped(shared.purpose)}</div>
-  <div class="cell"><span class="label">Individual contribution</span>${escaped(data.individualContribution || "N/A")}</div><div class="cell"><span class="label">Proposed budget</span>To be completed from Budget Proposal</div></div>
-  <h2>Mission alignment</h2><div class="checks">${data.missionAlignment.map((item) => `☑ ${escaped(item)}`).join(" &nbsp; ")}</div><div class="cell"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell"><span class="label">PEO/PO</span>${escaped(data.peoPo || "Optional")}</div>
+  <div class="cell"><span class="label">Individual contribution</span>${escaped(data.individualContribution)}</div><div class="cell"><span class="label">Proposed budget</span>To be completed from Budget Proposal</div></div>
+  <h2>Mission alignment</h2><div class="checks">${data.missionAlignment.map((item) => `☑ ${escaped(item)}`).join("<br>")}</div><div class="cell"><span class="label">Mapúa Core Values explanation</span>${escaped(data.coreValuesExplanation || "N/A")}</div><div class="cell"><span class="label">PEO/PO</span>${escaped(data.peoPo || "")}</div>
   <h2>Signatures and approvals</h2><div class="signature"><div class="line">Class Officer<br>Signature / date</div><div class="line">Faculty Adviser<br>Signature / date</div><div class="line">Dean / Subject Chair<br>Signature / date</div><div class="line">Asst. VP OSAAR<br>Signature / date</div></div>
-  <p><b>Submission rule:</b> Submit at least 7 days before the activity. Post-activity documents are due within 3 days after.</p><script>window.onload=()=>window.print();</script></body></html>`);
+  <p><b>Submission rule:</b> Submit at least 10 days before the activity. Post-activity documents are due within 3 days after.</p><script>window.onload=()=>window.print();</script></body></html>`);
   popup.document.close();
 };
 
@@ -1302,34 +1302,790 @@ function EventProposalPage({ user, organization }: { user?: UserSession; organiz
     finally { setSaving(false); }
   };
   const total = form.budget.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
-  return <>
-    <Header eyebrow="EVENT PROPOSAL" title="Create an event proposal" sub={`${organization.name}. This proposal is independent from bookings and SAAF.`} />
-    <div className="form-layout">
-      <form className="panel form-panel" onSubmit={(event) => { event.preventDefault(); void save(true); }}>
-        <div className="form-section"><h3>Proposal details</h3><div className="form-grid">
-          <Field label="School" type="text" value={form.school} onChange={(value) => update("school", value)} placeholder="Mapúa University" />
-          <Field label="Academic year" type="text" value={form.academicYear} onChange={(value) => update("academicYear", value)} placeholder="2026-2027" />
-          <Field label="Event title" type="text" value={form.eventTitle} onChange={(value) => update("eventTitle", value)} placeholder="Event title" />
-          <Field label="Tagline" type="text" value={form.tagline} onChange={(value) => update("tagline", value)} placeholder="Optional tagline" />
-          <Field label="Date" type="date" value={form.eventDate} onChange={(value) => update("eventDate", value)} placeholder="" min={localDateValue()} />
-          <div className="field"><label>Time</label><div className="time-row"><input type="time" value={form.startTime} onChange={(event) => update("startTime", event.target.value)} /><input type="time" value={form.endTime} onChange={(event) => update("endTime", event.target.value)} /></div></div>
-          <Field label="Venue" type="text" value={form.venue} onChange={(value) => update("venue", value)} placeholder="Venue or online link" />
-          <div className="field"><label>Mode</label><div className="choice-row">{["Face-to-face", "Online"].map((value) => <label key={value}><input type="radio" checked={form.mode === value} onChange={() => update("mode", value as ProposalFormData["mode"])} /> {value}</label>)}</div></div>
-          <div className="field full"><label>Event description</label><textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={4} /></div>
-          <Field label="Target participants" type="text" value={form.targetParticipants} onChange={(value) => update("targetParticipants", value)} placeholder="Organizations, classes, or community" />
-          <Field label="Expected count" type="number" value={String(form.expectedCount)} onChange={(value) => update("expectedCount", Number(value) || 0)} placeholder="0" />
-        </div></div>
-        <div className="form-section"><h3>SDGs and objectives</h3><div className="choice-grid">{["SDG 3 Good Health", "SDG 4 Quality Education", "SDG 5 Gender Equality", "SDG 10 Reduced Inequalities", "SDG 11 Sustainable Cities", "SDG 17 Partnerships"].map((sdg) => <label key={sdg}><input type="checkbox" checked={form.sdgs.includes(sdg)} onChange={(event) => update("sdgs", event.target.checked ? [...form.sdgs, sdg] : form.sdgs.filter((item) => item !== sdg))} /> {sdg}</label>)}</div>{form.sdgs.map((sdg) => <div className="field" key={sdg}><label>{sdg} explanation</label><input value={form.sdgExplanations[sdg] ?? ""} onChange={(event) => update("sdgExplanations", { ...form.sdgExplanations, [sdg]: event.target.value })} /></div>)}<div className="repeat-list">{form.objectives.map((objective, index) => <div className="repeat-row" key={index}><input value={objective} placeholder={`Objective ${index + 1}`} onChange={(event) => update("objectives", form.objectives.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} /><button type="button" className="text-button" onClick={() => update("objectives", form.objectives.filter((_, itemIndex) => itemIndex !== index))}>Remove</button></div>)}</div><Button secondary onClick={() => update("objectives", [...form.objectives, ""])}>Add objective</Button></div>
-        <div className="form-section"><h3>Strategies and event flow</h3><div className="repeat-list">{form.strategies.map((item, index) => <div className="repeat-card" key={index}><input placeholder="Strategy title" value={item.title} onChange={(event) => update("strategies", form.strategies.map((row, rowIndex) => rowIndex === index ? { ...row, title: event.target.value } : row))} /><textarea placeholder="Strategy description" value={item.description} onChange={(event) => update("strategies", form.strategies.map((row, rowIndex) => rowIndex === index ? { ...row, description: event.target.value } : row))} /><button type="button" className="text-button" onClick={() => update("strategies", form.strategies.filter((_, rowIndex) => rowIndex !== index))}>Remove strategy</button></div>)}</div><Button secondary onClick={() => update("strategies", [...form.strategies, { title: "", description: "" }])}>Add strategy</Button><p className="muted form-note">Timing is subject to change.</p><div className="repeat-list">{form.eventFlow.map((item, index) => <div className="repeat-row" key={index}><input type="time" value={item.startTime} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, startTime: event.target.value } : row))} /><input type="time" value={item.endTime} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, endTime: event.target.value } : row))} /><input placeholder="Activity" value={item.activity} onChange={(event) => update("eventFlow", form.eventFlow.map((row, rowIndex) => rowIndex === index ? { ...row, activity: event.target.value } : row))} /><button type="button" className="text-button" onClick={() => update("eventFlow", form.eventFlow.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}</div><Button secondary onClick={() => update("eventFlow", [...form.eventFlow, { startTime: "", endTime: "", activity: "" }])}>Add flow row</Button></div>
-        <div className="form-section"><h3>Project management team</h3>{form.team.map((item, index) => <div className="repeat-grid" key={index}>{(["group", "position", "name", "studentNumber", "email"] as const).map((key) => <input key={key} placeholder={key} value={item[key]} onChange={(event) => update("team", form.team.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: event.target.value } : row))} />)}<button type="button" className="text-button" onClick={() => update("team", form.team.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<Button secondary onClick={() => update("team", [...form.team, { group: "", position: "", name: "", studentNumber: "", email: "" }])}>Add team member</Button></div>
-        <div className="form-section"><h3>List of participants</h3><p className="muted">Tentative list. Mark attendance after the event.</p>{form.participants.map((item, index) => <div className="repeat-grid participant-row" key={index}><select value={item.type} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, type: event.target.value as "Officer" | "Adviser" | "Member" } : row))}><option>Officer</option><option>Adviser</option><option>Member</option></select><input placeholder="Name" value={item.name} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, name: event.target.value } : row))} /><input placeholder="Student number" value={item.studentNumber} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, studentNumber: event.target.value } : row))} /><input placeholder="Email" value={item.email} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, email: event.target.value } : row))} /><label className="check"><input type="checkbox" checked={item.attended} onChange={(event) => update("participants", form.participants.map((row, rowIndex) => rowIndex === index ? { ...row, attended: event.target.checked } : row))} /> Attended</label><button type="button" className="text-button" onClick={() => update("participants", form.participants.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<div className="form-actions inline-actions"><Button secondary onClick={() => update("participants", [...form.participants, { type: "Member", name: "", studentNumber: "", email: "", attended: false }])}>Add participant</Button><label className="button button-secondary csv-import">Import CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const imported = String(reader.result).split(/\r?\n/).slice(1).filter(Boolean).map((line) => { const [type, name, studentNumber, email] = line.split(","); return { type: (["Officer", "Adviser", "Member"].includes(type) ? type : "Member") as "Officer" | "Adviser" | "Member", name: name ?? "", studentNumber: studentNumber ?? "", email: email ?? "", attended: false }; }); update("participants", imported); }; reader.readAsText(file); }} /></label></div></div>
-        <div className="form-section"><h3>Signatures</h3><div className="form-grid"><Field label="Prepared by" type="text" value={form.preparedBy} onChange={(value) => update("preparedBy", value)} placeholder="Name" /><Field label="Noted by (Organization Adviser)" type="text" value={form.notedBy} onChange={(value) => update("notedBy", value)} placeholder="Adviser name" /></div></div>
-        <div className="form-section"><h3>Budget proposal</h3>{form.budget.map((item, index) => <div className="repeat-grid" key={index}><input placeholder="Category" value={item.category} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, category: event.target.value } : row))} /><input placeholder="Details" value={item.details} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, details: event.target.value } : row))} /><input type="number" min="0" placeholder="Qty" value={item.quantity} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: Number(event.target.value) || 0 } : row))} /><input type="number" min="0" placeholder="Unit cost" value={item.unitCost} onChange={(event) => update("budget", form.budget.map((row, rowIndex) => rowIndex === index ? { ...row, unitCost: Number(event.target.value) || 0 } : row))} /><span className="muted">₱{(item.quantity * item.unitCost).toFixed(2)}</span><button type="button" className="text-button" onClick={() => update("budget", form.budget.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>)}<Button secondary onClick={() => update("budget", [...form.budget, { category: "", details: "", quantity: 1, unitCost: 0 }])}>Add budget item</Button><Field label="Sponsored amount" type="number" value={String(form.sponsoredAmount)} onChange={(value) => update("sponsoredAmount", Number(value) || 0)} placeholder="0" /><p className="muted">Total ₱{total.toFixed(2)} · Net cost ₱{Math.max(0, total - form.sponsoredAmount).toFixed(2)}</p></div>
-        {message && <div className={`notice ${message.includes("Unable") || message.includes("required") ? "error" : "success"}`}>{message}</div>}<div className="form-actions"><Button secondary onClick={() => printEventProposal(form, organization.name)}>Export proposal PDF</Button><Button secondary onClick={() => void save(false)} disabled={saving}>Save draft</Button><Button type="submit" disabled={saving}>{saving ? "Saving..." : "Submit proposal"}</Button></div>
-      </form>
-      <aside className="form-aside"><span className="eyebrow">MY PROPOSALS</span>{proposals.length === 0 ? <p className="muted">No saved proposals yet.</p> : proposals.map((proposal) => <button className="proposal-summary" key={proposal.proposal_id} onClick={() => { setProposalId(proposal.proposal_id); setStatus(proposal.status); setForm({ ...emptyProposal(organization.name, user?.name ?? ""), ...proposal.form_data }); }}><b>{proposal.form_data.eventTitle || "Untitled proposal"}</b><span>{proposal.status}</span></button>)}<p className="muted">Current status: {status}</p></aside>
-    </div>
-  </>;
+  return (
+    <>
+      <Header
+        eyebrow="EVENT PROPOSAL"
+        title="Create an event proposal"
+        sub={`${organization.name}. This proposal is independent from bookings and SAAF.`}
+      />
+      <div className="form-layout">
+        <form
+          className="panel form-panel"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save(true);
+          }}
+        >
+          <div className="form-section">
+            <h3>Proposal details</h3>
+            <div className="form-grid">
+              <Field
+                label="School"
+                type="text"
+                value={form.school}
+                onChange={(value) => update("school", value)}
+                placeholder="Mapúa University"
+              />
+              <Field
+                label="Academic year"
+                type="text"
+                value={form.academicYear}
+                onChange={(value) => update("academicYear", value)}
+                placeholder="2026-2027"
+              />
+              <Field
+                label="Event title"
+                type="text"
+                value={form.eventTitle}
+                onChange={(value) => update("eventTitle", value)}
+                placeholder="Event title"
+              />
+              <Field
+                label="Tagline"
+                type="text"
+                value={form.tagline}
+                onChange={(value) => update("tagline", value)}
+                placeholder="Optional tagline"
+              />
+              <Field
+                label="Date"
+                type="date"
+                value={form.eventDate}
+                onChange={(value) => update("eventDate", value)}
+                placeholder=""
+                min={localDateValue()}
+              />
+              <div className="field">
+                <label>Time</label>
+                <div className="time-row">
+                  <input
+                    type="time"
+                    value={form.startTime}
+                    onChange={(event) =>
+                      update("startTime", event.target.value)
+                    }
+                  />
+                  <input
+                    type="time"
+                    value={form.endTime}
+                    onChange={(event) => update("endTime", event.target.value)}
+                  />
+                </div>
+              </div>
+              <Field
+                label="Venue"
+                type="text"
+                value={form.venue}
+                onChange={(value) => update("venue", value)}
+                placeholder="Venue or online link"
+              />
+              <div className="field">
+                <label>Mode</label>
+                <div className="choice-row">
+                  {["Face-to-face", "Online"].map((value) => (
+                    <label key={value}>
+                      <input
+                        type="radio"
+                        checked={form.mode === value}
+                        onChange={() =>
+                          update("mode", value as ProposalFormData["mode"])
+                        }
+                      />{" "}
+                      {value}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="field full">
+                <label>Event description</label>
+                <textarea
+                  value={form.description}
+                  onChange={(event) =>
+                    update("description", event.target.value)
+                  }
+                  rows={4}
+                />
+              </div>
+              <Field
+                label="Target participants"
+                type="text"
+                value={form.targetParticipants}
+                onChange={(value) => update("targetParticipants", value)}
+                placeholder="Organizations, classes, or community"
+              />
+              <Field
+                label="Expected count"
+                type="number"
+                value={String(form.expectedCount)}
+                onChange={(value) =>
+                  update("expectedCount", Number(value) || 0)
+                }
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="form-section">
+            <h3>The event supports the following Sustainable Development Goals (SDGs)</h3>
+            <div className="choice-grid">
+              {[
+                "SDG 3 Good Health",
+                "SDG 4 Quality Education",
+                "SDG 5 Gender Equality",
+                "SDG 10 Reduced Inequalities",
+                "SDG 11 Sustainable Cities",
+                "SDG 17 Partnerships",
+              ].map((sdg) => (
+                <label key={sdg}>
+                  <input
+                    type="checkbox"
+                    checked={form.sdgs.includes(sdg)}
+                    onChange={(event) =>
+                      update(
+                        "sdgs",
+                        event.target.checked
+                          ? [...form.sdgs, sdg]
+                          : form.sdgs.filter((item) => item !== sdg),
+                      )
+                    }
+                  />{" "}
+                  {sdg}
+                </label>
+              ))}
+            </div>
+            {form.sdgs.map((sdg) => (
+              <div className="field" key={sdg}>
+                <label>{sdg} explanation</label>
+                <input
+                  value={form.sdgExplanations[sdg] ?? ""}
+                  onChange={(event) =>
+                    update("sdgExplanations", {
+                      ...form.sdgExplanations,
+                      [sdg]: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            ))}
+            <div className="repeat-list">
+              {form.objectives.map((objective, index) => (
+                <div className="repeat-row" key={index}>
+                  <input
+                    value={objective}
+                    placeholder={`Objective ${index + 1}`}
+                    onChange={(event) =>
+                      update(
+                        "objectives",
+                        form.objectives.map((item, itemIndex) =>
+                          itemIndex === index ? event.target.value : item,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() =>
+                      update(
+                        "objectives",
+                        form.objectives.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <Button
+              secondary
+              onClick={() => update("objectives", [...form.objectives, ""])}
+            >
+              Add objective
+            </Button>
+          </div>
+          <div className="form-section">
+            <h3>Event strategies and event flow</h3>
+            <div className="repeat-list">
+              {form.strategies.map((item, index) => (
+                <div className="repeat-card" key={index}>
+                  <input
+                    placeholder="Strategy title"
+                    value={item.title}
+                    onChange={(event) =>
+                      update(
+                        "strategies",
+                        form.strategies.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, title: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                  <textarea
+                    placeholder="Strategy description"
+                    value={item.description}
+                    onChange={(event) =>
+                      update(
+                        "strategies",
+                        form.strategies.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, description: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() =>
+                      update(
+                        "strategies",
+                        form.strategies.filter(
+                          (_, rowIndex) => rowIndex !== index,
+                        ),
+                      )
+                    }
+                  >
+                    Remove strategy
+                  </button>
+                </div>
+              ))}
+            </div>
+            <Button
+              secondary
+              onClick={() =>
+                update("strategies", [
+                  ...form.strategies,
+                  { title: "", description: "" },
+                ])
+              }
+            >
+              Add strategy
+            </Button>
+            <p className="muted form-note">Timing is subject to change.</p>
+            <table className="entry-table">
+              <thead><tr><th>Start</th><th>End</th><th>Activity</th><th>Action</th></tr></thead>
+              <tbody>
+              {form.eventFlow.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                  <input
+                    type="time"
+                    value={item.startTime}
+                    onChange={(event) =>
+                      update(
+                        "eventFlow",
+                        form.eventFlow.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, startTime: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                  </td>
+                  <td>
+                  <input
+                    type="time"
+                    value={item.endTime}
+                    onChange={(event) =>
+                      update(
+                        "eventFlow",
+                        form.eventFlow.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, endTime: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                  </td>
+                  <td>
+                  <input
+                    placeholder="Activity"
+                    value={item.activity}
+                    onChange={(event) =>
+                      update(
+                        "eventFlow",
+                        form.eventFlow.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, activity: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                  </td>
+                  <td>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() =>
+                      update(
+                        "eventFlow",
+                        form.eventFlow.filter(
+                          (_, rowIndex) => rowIndex !== index,
+                        ),
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                  </td>
+                </tr>
+              ))}
+              </tbody>
+            </table>
+            <Button
+              secondary
+              onClick={() =>
+                update("eventFlow", [
+                  ...form.eventFlow,
+                  { startTime: "", endTime: "", activity: "" },
+                ])
+              }
+            >
+              Add flow row
+            </Button>
+          </div>
+          <div className="form-section">
+            <h3>Project management team</h3>
+            <table className="entry-table">
+              <thead><tr><th>Group</th><th>Position</th><th>Name</th><th>Student number</th><th>Email</th><th>Action</th></tr></thead>
+              <tbody>{form.team.map((item, index) => (
+                <tr key={index}>
+                {(
+                  [
+                    "group",
+                    "position",
+                    "name",
+                    "studentNumber",
+                    "email",
+                  ] as const
+                ).map((key) => (
+                  <td key={key}><input
+                    key={key}
+                    placeholder={key}
+                    value={item[key]}
+                    onChange={(event) =>
+                      update(
+                        "team",
+                        form.team.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, [key]: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  /></td>
+                ))}
+                <td><button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    update(
+                      "team",
+                      form.team.filter((_, rowIndex) => rowIndex !== index),
+                    )
+                  }
+                >
+                  Remove
+                </button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <Button
+              secondary
+              onClick={() =>
+                update("team", [
+                  ...form.team,
+                  {
+                    group: "",
+                    position: "",
+                    name: "",
+                    studentNumber: "",
+                    email: "",
+                  },
+                ])
+              }
+            >
+              Add team member
+            </Button>
+          </div>
+          <div className="form-section">
+            <h3>List of participants</h3>
+            <p className="muted">
+              Tentative list. Mark attendance after the event.
+            </p>
+            <table className="entry-table">
+              <thead><tr><th>Type</th><th>Name</th><th>Student number</th><th>Email</th><th>Attended</th><th>Action</th></tr></thead>
+              <tbody>{form.participants.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                <select
+                  value={item.type}
+                  onChange={(event) =>
+                    update(
+                      "participants",
+                      form.participants.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? {
+                              ...row,
+                              type: event.target.value as
+                                "Officer" | "Adviser" | "Member",
+                            }
+                          : row,
+                      ),
+                    )
+                  }
+                >
+                  <option>Officer</option>
+                  <option>Adviser</option>
+                  <option>Member</option>
+                </select>
+                  </td>
+                  <td>
+                <input
+                  placeholder="Name"
+                  value={item.name}
+                  onChange={(event) =>
+                    update(
+                      "participants",
+                      form.participants.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? { ...row, name: event.target.value }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <input
+                  placeholder="Student number"
+                  value={item.studentNumber}
+                  onChange={(event) =>
+                    update(
+                      "participants",
+                      form.participants.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? { ...row, studentNumber: event.target.value }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <input
+                  placeholder="Email"
+                  value={item.email}
+                  onChange={(event) =>
+                    update(
+                      "participants",
+                      form.participants.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? { ...row, email: event.target.value }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={item.attended}
+                    onChange={(event) =>
+                      update(
+                        "participants",
+                        form.participants.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? { ...row, attended: event.target.checked }
+                            : row,
+                        ),
+                      )
+                    }
+                  />{" "}
+                  Attended
+                </label>
+                  </td>
+                  <td><button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    update(
+                      "participants",
+                      form.participants.filter(
+                        (_, rowIndex) => rowIndex !== index,
+                      ),
+                    )
+                  }
+                >
+                  Remove
+                </button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <div className="form-actions inline-actions">
+              <Button
+                secondary
+                onClick={() =>
+                  update("participants", [
+                    ...form.participants,
+                    {
+                      type: "Member",
+                      name: "",
+                      studentNumber: "",
+                      email: "",
+                      attended: false,
+                    },
+                  ])
+                }
+              >
+                Add participant
+              </Button>
+              <label className="button button-secondary csv-import">
+                Import CSV
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const imported = String(reader.result)
+                        .split(/\r?\n/)
+                        .slice(1)
+                        .filter(Boolean)
+                        .map((line) => {
+                          const [type, name, studentNumber, email] =
+                            line.split(",");
+                          return {
+                            type: (["Officer", "Adviser", "Member"].includes(
+                              type,
+                            )
+                              ? type
+                              : "Member") as "Officer" | "Adviser" | "Member",
+                            name: name ?? "",
+                            studentNumber: studentNumber ?? "",
+                            email: email ?? "",
+                            attended: false,
+                          };
+                        });
+                      update("participants", imported);
+                    };
+                    reader.readAsText(file);
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+          <div className="form-section">
+            <h3>Signatures</h3>
+            <div className="form-grid">
+              <Field
+                label="Prepared by"
+                type="text"
+                value={form.preparedBy}
+                onChange={(value) => update("preparedBy", value)}
+                placeholder="Name"
+              />
+              <Field
+                label="Noted by (Organization Adviser)"
+                type="text"
+                value={form.notedBy}
+                onChange={(value) => update("notedBy", value)}
+                placeholder="Adviser name"
+              />
+            </div>
+          </div>
+          <div className="form-section">
+            <h3>Budget proposal</h3>
+            <table className="entry-table">
+              <thead><tr><th>Category</th><th>Details</th><th>Quantity</th><th>Unit cost</th><th>Subtotal</th><th>Action</th></tr></thead>
+              <tbody>{form.budget.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                <input
+                  placeholder="Category"
+                  value={item.category}
+                  onChange={(event) =>
+                    update(
+                      "budget",
+                      form.budget.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? { ...row, category: event.target.value }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <input
+                  placeholder="Details"
+                  value={item.details}
+                  onChange={(event) =>
+                    update(
+                      "budget",
+                      form.budget.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? { ...row, details: event.target.value }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Qty"
+                  value={item.quantity}
+                  onChange={(event) =>
+                    update(
+                      "budget",
+                      form.budget.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? {
+                              ...row,
+                              quantity: Number(event.target.value) || 0,
+                            }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Unit cost"
+                  value={item.unitCost}
+                  onChange={(event) =>
+                    update(
+                      "budget",
+                      form.budget.map((row, rowIndex) =>
+                        rowIndex === index
+                          ? {
+                              ...row,
+                              unitCost: Number(event.target.value) || 0,
+                            }
+                          : row,
+                      ),
+                    )
+                  }
+                />
+                  </td>
+                  <td>
+                <span className="muted">
+                  ₱{(item.quantity * item.unitCost).toFixed(2)}
+                </span>
+                  </td>
+                  <td><button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    update(
+                      "budget",
+                      form.budget.filter((_, rowIndex) => rowIndex !== index),
+                    )
+                  }
+                >
+                  Remove
+                </button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <Button
+              secondary
+              onClick={() =>
+                update("budget", [
+                  ...form.budget,
+                  { category: "", details: "", quantity: 1, unitCost: 0 },
+                ])
+              }
+            >
+              Add budget item
+            </Button>
+            <Field
+              label="Sponsored amount"
+              type="number"
+              value={String(form.sponsoredAmount)}
+              onChange={(value) =>
+                update("sponsoredAmount", Number(value) || 0)
+              }
+              placeholder="0"
+            />
+            <p className="muted">
+              Total ₱{total.toFixed(2)} · Net cost ₱
+              {Math.max(0, total - form.sponsoredAmount).toFixed(2)}
+            </p>
+          </div>
+          {message && (
+            <div
+              className={`notice ${message.includes("Unable") || message.includes("required") ? "error" : "success"}`}
+            >
+              {message}
+            </div>
+          )}
+          <div className="form-actions">
+            <Button
+              secondary
+              onClick={() => printEventProposal(form, organization.name)}
+            >
+              Export proposal PDF
+            </Button>
+            <Button
+              secondary
+              onClick={() => void save(false)}
+              disabled={saving}
+            >
+              Save draft
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Submit proposal"}
+            </Button>
+          </div>
+        </form>
+        <aside className="form-aside">
+          <span className="eyebrow">MY PROPOSALS</span>
+          {proposals.length === 0 ? (
+            <p className="muted">No saved proposals yet.</p>
+          ) : (
+            proposals.map((proposal) => (
+              <button
+                className="proposal-summary"
+                key={proposal.proposal_id}
+                onClick={() => {
+                  setProposalId(proposal.proposal_id);
+                  setStatus(proposal.status);
+                  setForm({
+                    ...emptyProposal(organization.name, user?.name ?? ""),
+                    ...proposal.form_data,
+                  });
+                }}
+              >
+                <b>{proposal.form_data.eventTitle || "Untitled proposal"}</b>
+                <span>{proposal.status}</span>
+              </button>
+            ))
+          )}
+          <p className="muted">Current status: {status}</p>
+        </aside>
+      </div>
+    </>
+  );
 }
 
 function StudentView({
@@ -1685,14 +2441,14 @@ function BookingForm({
   const [category, setCategory] = useState("Co-Curricular");
   const [activitySize, setActivitySize] = useState("Minor");
   const [memberCount, setMemberCount] = useState("0");
-  const [applicantName, setApplicantName] = useState(user?.name ?? "");
+  const [applicantName, setApplicantName] = useState("");
   const [studentNumber, setStudentNumber] = useState("");
   const [programYear, setProgramYear] = useState("");
   const [position, setPosition] = useState("");
   const [organizationCourseSection, setOrganizationCourseSection] = useState("");
   const [nature, setNature] = useState("");
   const [objectives, setObjectives] = useState("");
-  const [individualContribution, setIndividualContribution] = useState("N/A");
+  const [individualContribution, setIndividualContribution] = useState("");
   const [missionAlignment, setMissionAlignment] = useState<string[]>([]);
   const [coreValuesExplanation, setCoreValuesExplanation] = useState("");
   const [peoPo, setPeoPo] = useState("");
@@ -1721,14 +2477,14 @@ function BookingForm({
         setCategory(saved.category ?? "Co-Curricular");
         setActivitySize(saved.size ?? "Minor");
         setMemberCount(String(saved.memberCount ?? 0));
-        setApplicantName(saved.applicantName ?? user.name);
+        setApplicantName(saved.applicantName ?? "");
         setStudentNumber(saved.studentNumber ?? "");
         setProgramYear(saved.programYear ?? "");
         setPosition(saved.position ?? "");
         setOrganizationCourseSection(saved.organizationCourseSection ?? "");
         setNature(saved.nature ?? "");
         setObjectives(saved.objectives ?? "");
-        setIndividualContribution(saved.individualContribution ?? "N/A");
+        setIndividualContribution(saved.individualContribution ?? "");
         setMissionAlignment(saved.missionAlignment ?? []);
         setCoreValuesExplanation(saved.coreValuesExplanation ?? "");
         setPeoPo(saved.peoPo ?? "");
@@ -1871,9 +2627,9 @@ function BookingForm({
             const requestKey = crypto.randomUUID();
             const minimumDate = new Date();
             minimumDate.setHours(0, 0, 0, 0);
-            minimumDate.setDate(minimumDate.getDate() + 7);
+            minimumDate.setDate(minimumDate.getDate() + 10);
             if (new Date(`${date}T00:00:00`) < minimumDate) {
-              setError("The activity must be scheduled at least 7 days from today.");
+              setError("The activity must be scheduled at least 10 days from today.");
               setSubmitting(false);
               return;
             }
@@ -2021,15 +2777,15 @@ function BookingForm({
               <Field label="Position" type="text" value={position} onChange={setPosition} placeholder="Class Officer" />
               <Field label="Organization/course and section" type="text" value={organizationCourseSection} onChange={setOrganizationCourseSection} placeholder="Organization or course-section" />
               <Field label="Nature of activity" type="text" value={nature} onChange={setNature} placeholder="Meeting, seminar, outreach..." />
-              <Field label="Individual contribution" type="text" value={individualContribution} onChange={setIndividualContribution} placeholder="Amount or N/A" />
+              <Field label="Individual contribution" type="text" value={individualContribution} onChange={setIndividualContribution} placeholder="Amount or details" />
               <div className="field full"><label>Objectives</label><textarea value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={4} placeholder="State the objectives of the activity" /></div>
               <div className="field full"><label>Mission alignment <small>(select at least one)</small></label><div className="choice-grid">
-                {['Academic excellence', 'Community engagement', 'Student development'].map((value) => <label key={value}><input type="checkbox" checked={missionAlignment.includes(value)} onChange={(e) => setMissionAlignment(e.target.checked ? [...missionAlignment, value] : missionAlignment.filter((item) => item !== value))} /> {value}</label>)}
+                {['The University shall provide a learning environment in order for its students to acquire the attributes that will make them globally competitive.', 'The Institute shall engage in economically viable research, development, and innovation.', 'The Institute shall provide state-of-the-art solutions to problems of industries and communities.'].map((value) => <label key={value}><input type="checkbox" checked={missionAlignment.includes(value)} onChange={(e) => setMissionAlignment(e.target.checked ? [...missionAlignment, value] : missionAlignment.filter((item) => item !== value))} /> {value}</label>)}
               </div></div>
               <div className="field full"><label>Mapúa Core Values explanation</label><textarea value={coreValuesExplanation} onChange={(e) => setCoreValuesExplanation(e.target.value)} rows={3} placeholder="Discipline, Excellence, Commitment, Integrity, Relevance" /></div>
-              <div className="field full"><label>PEO/PO <small>(optional)</small></label><textarea value={peoPo} onChange={(e) => setPeoPo(e.target.value)} rows={2} /></div>
+              <div className="field full"><label>PEO/PO <small>(if and when applicable)</small></label><textarea value={peoPo} onChange={(e) => setPeoPo(e.target.value)} rows={2} placeholder="If and when applicable, enumerate the Program Educational Objectives (PEO) or Program Objectives (PO) Satisfied in this Activity" /></div>
             </div>
-            <p className="muted form-note">Day is calculated from the event date. Proposed budget will be supplied by the Budget Proposal form. Submit at least 7 days before the activity; post-activity documents are due within 3 days after.</p>
+            <p className="muted form-note">Day is calculated from the event date. Proposed budget will be supplied by the Budget Proposal form. Submit at least 10 days before the activity; post-activity documents are due within 3 days after.</p>
             <div className="form-actions inline-actions">
               <Button secondary onClick={() => printActivityApplication(activityFormData(), { organization: organization.name, event, date, venue, people: Number(people), startTime, endTime, purpose })}>Export Form 1 PDF</Button>
               <Button secondary onClick={saveDraft} disabled={submitting}>Save draft</Button>

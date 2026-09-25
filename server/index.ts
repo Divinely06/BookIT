@@ -712,10 +712,10 @@ app.post("/api/bookings", async (request, response) => {
         }
         const minimumDate = new Date();
         minimumDate.setHours(0, 0, 0, 0);
-        minimumDate.setDate(minimumDate.getDate() + 7);
+        minimumDate.setDate(minimumDate.getDate() + 10);
         const activityDate = new Date(`${eventDate}T00:00:00`);
         if (Number.isNaN(activityDate.getTime()) || activityDate < minimumDate) {
-          response.status(400).json({ error: "Form 1 must be submitted at least 7 days before the activity" });
+          response.status(400).json({ error: "Form 1 must be submitted at least 10 days before the activity" });
           return;
         }
       }
