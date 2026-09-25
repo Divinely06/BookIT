@@ -3278,9 +3278,10 @@ function Review({
   role: Role;
   readOnly?: boolean;
   onClose: () => void;
-  onUpdate: (s: Status, remarks?: string) => void;
+  onUpdate: (s: Status, remarks?: string) => Promise<void> | void;
 }) {
   const [remarks, setRemarks] = useState("");
+  const [updating, setUpdating] = useState(false);
   const nextStatus =
     role === "faculty"
       ? "Dean review"
@@ -3501,14 +3502,36 @@ function Review({
               placeholder="Add remarks for the organization..."
               rows={3}
               value={remarks}
+              disabled={updating}
               onChange={(event) => setRemarks(event.target.value)}
             />
             <div className="form-actions">
-              <Button secondary onClick={() => onUpdate("Rejected", remarks.trim() || "No reason provided")}>
-                Reject
+              <Button
+                secondary
+                disabled={updating}
+                onClick={async () => {
+                  setUpdating(true);
+                  try {
+                    await onUpdate("Rejected", remarks.trim() || "No reason provided");
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+              >
+                {updating ? "Saving..." : "Reject"}
               </Button>
-              <Button onClick={() => onUpdate(nextStatus, remarks.trim())}>
-                {approveLabel}
+              <Button
+                disabled={updating}
+                onClick={async () => {
+                  setUpdating(true);
+                  try {
+                    await onUpdate(nextStatus, remarks.trim());
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+              >
+                {updating ? "Saving..." : approveLabel}
               </Button>
             </div>
           </>
