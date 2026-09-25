@@ -287,9 +287,18 @@ function mapBooking(row: Record<string, any>): Booking {
         year: "numeric",
       })
     : "Date unavailable";
-  const activityApplication = row.activity_application && typeof row.activity_application === "object"
-    && Object.keys(row.activity_application).length > 0
-    ? row.activity_application as ActivityApplicationData
+  const rawApplication = typeof row.activity_application === "string"
+    ? (() => {
+        try {
+          return JSON.parse(row.activity_application);
+        } catch {
+          return null;
+        }
+      })()
+    : row.activity_application;
+  const activityApplication = rawApplication && typeof rawApplication === "object"
+    && Object.keys(rawApplication).length > 0
+    ? rawApplication as ActivityApplicationData
     : undefined;
   return {
     id: String(row.booking_id),
@@ -2641,9 +2650,9 @@ function BookingForm({
     missionAlignment,
     coreValuesExplanation,
     peoPo,
-    budgetProposal,
-    eventFlow,
-    projectManagement,
+    budgetProposal: (budgetProposal ?? []).map((item) => ({ ...item })),
+    eventFlow: (eventFlow ?? []).map((item) => ({ ...item })),
+    projectManagement: (projectManagement ?? []).map((item) => ({ ...item })),
   });
   const saveDraft = async () => {
     setSubmitting(true);
