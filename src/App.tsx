@@ -4244,7 +4244,7 @@ export default function App() {
   const [storedSession] = useState<StoredSession | null>(() => {
     try {
       const parsed = JSON.parse(localStorage.getItem(sessionStorageKey) ?? "null") as StoredSession | null;
-      if (!parsed || !["organization", "faculty", "admin", "cdmo"].includes(parsed.role)) return null;
+      if (!parsed || !["organization", "faculty", "dean", "admin", "cdmo"].includes(parsed.role)) return null;
       return parsed;
     } catch {
       return null;
