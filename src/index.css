@@ -1194,8 +1194,8 @@ td small {
   gap: 7px;
   line-height: 1.45;
 }
-.mission-list input {
-  width: 16px;
+.mission-list .mission-checkbox {
+  width: 16px !important;
   max-width: 16px;
   flex: 0 0 auto;
   margin-top: 2px;
