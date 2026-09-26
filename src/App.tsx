@@ -3,7 +3,9 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 const apiBase = "";
 const sessionStorageKey = "cardinal-resource-hub-session";
 let notificationAudioContext: AudioContext | null = null;
+let notificationAudioUnlocked = false;
 const getNotificationAudioContext = () => {
+  if (!notificationAudioUnlocked) return null;
   const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) return null;
   if (!notificationAudioContext || notificationAudioContext.state === "closed") {
@@ -939,6 +941,7 @@ function Shell({
   }, [user?.userId]);
   useEffect(() => {
     const unlockAudio = () => {
+      notificationAudioUnlocked = true;
       const context = getNotificationAudioContext();
       if (context?.state === "suspended") void context.resume();
     };

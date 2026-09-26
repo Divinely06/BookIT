@@ -3,7 +3,7 @@ import { sql } from "./_db.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "15mb" } } };
 
-async function createBookingNotifications(bookingId: number, status: string, actorRole: string, remarks?: string) {
+export async function createBookingNotifications(bookingId: number, status: string, actorRole: string, remarks?: string) {
   try {
     const [booking] = await sql`
       select b.event_name, b.org_id, b.requested_by_user_id, o.faculty_adviser_id, o.org_name
