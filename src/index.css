@@ -1651,6 +1651,8 @@ td small {
     width: 100%;
     min-height: auto;
     padding: 14px 15px 10px;
+    border-right: 0;
+    border-bottom: 1px solid #e4e4ec;
   }
   .sidebar .brand {
     padding: 0 5px 12px;
@@ -1674,17 +1676,34 @@ td small {
     display: flex;
     overflow-x: auto;
     gap: 3px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar nav::-webkit-scrollbar {
+    display: none;
   }
   .sidebar nav button {
     white-space: nowrap;
     padding: 10px 9px;
+    flex: 0 0 auto;
   }
   .sidebar nav button.active {
     box-shadow: inset 0 -2px var(--red);
   }
+  .main {
+    min-width: 0;
+    width: 100%;
+  }
   .topbar {
     height: 49px;
     padding: 0 18px;
+    gap: 10px;
+  }
+  .topbar > div:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .topbar > div:first-child span:not(.topbar-label):not(.slash),
   .top-actions .online {
@@ -1692,6 +1711,21 @@ td small {
   }
   .content {
     padding: 32px 18px 55px;
+  }
+  .page-header {
+    display: block;
+    margin-bottom: 20px;
+  }
+  .page-header h1 {
+    font-size: 30px;
+    margin-top: 6px;
+  }
+  .stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .stat {
+    min-height: 0;
   }
   .filter-row {
     align-items: stretch;
@@ -2500,6 +2534,9 @@ td {
   .auth-inner h2 {
     font-size: 27px;
   }
+  .app-shell {
+    display: block;
+  }
   .sidebar {
     border-bottom: 1px solid #e4e4ec;
   }
@@ -2508,6 +2545,9 @@ td {
   }
   .content {
     padding: 27px 18px 55px;
+  }
+  .page-header {
+    display: block;
   }
 }
 @media (max-height: 680px) and (min-width: 641px) {
